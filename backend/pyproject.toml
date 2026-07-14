@@ -1,0 +1,130 @@
+# ==============================================================================
+# AtlasOS Backend — Project Configuration
+#
+# Centralizes tool configuration for ruff, mypy, pytest, and coverage.
+# ==============================================================================
+
+[project]
+name = "atlasos-backend"
+version = "0.1.0"
+description = "AtlasOS — AI Memory Operating System Backend"
+requires-python = ">=3.11"
+
+# ------------------------------------------------------------------------------
+# Ruff — Linter & Formatter
+# Why ruff: 10-100x faster than flake8/isort/black combined.
+# Configured for strict, production-grade Python.
+# ------------------------------------------------------------------------------
+[tool.ruff]
+line-length = 99
+target-version = "py311"
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort (import ordering)
+    "N",    # pep8-naming
+    "W",    # pycodestyle warnings
+    "UP",   # pyupgrade (modern Python syntax)
+    "ANN",  # flake8-annotations (type hint enforcement)
+    "B",    # flake8-bugbear (common bugs)
+    "A",    # flake8-builtins (shadowing built-ins)
+    "COM",  # flake8-commas (trailing commas)
+    "C4",   # flake8-comprehensions (better comprehensions)
+    "ISC",  # flake8-implicit-str-concat
+    "PIE",  # flake8-pie (misc checks)
+    "T20",  # flake8-print (no print statements)
+    "Q",    # flake8-quotes (consistent quoting)
+    "RSE",  # flake8-raise (better raise usage)
+    "RET",  # flake8-return (better return usage)
+    "SLF",  # flake8-self (no private member access)
+    "SIM",  # flake8-simplify (simplify code)
+    "TCH",  # flake8-type-checking (TYPE_CHECKING imports)
+    "ARG",  # flake8-unused-arguments
+    "ERA",  # eradicate (commented-out code)
+    "PL",   # pylint rules
+    "TRY",  # tryceratops (better exception handling)
+    "RUF",  # ruff-specific rules
+]
+ignore = [
+    "ANN101",  # Missing type annotation for self (deprecated)
+    "ANN102",  # Missing type annotation for cls (deprecated)
+    "ANN401",  # Dynamically typed expressions (Any) — needed for some patterns
+    "COM812",  # Trailing comma conflict with formatter
+    "ISC001",  # Implicit string concat conflict with formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "ANN",     # Don't require type annotations in tests
+    "ARG",     # Unused arguments common in fixtures
+    "SLF001",  # Private member access OK in tests
+    "PLR2004", # Magic values OK in test assertions
+]
+"migrations/**/*.py" = [
+    "ANN",     # Alembic migrations don't need annotations
+    "ERA001",  # Commented code is common in migrations
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+# ------------------------------------------------------------------------------
+# Mypy — Static Type Checker
+# Strict mode ensures maximum type safety across the codebase.
+# Pydantic plugin enables proper type inference for Pydantic models.
+# ------------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+warn_unreachable = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = [
+    "celery.*",
+    "redis.*",
+    "qdrant_client.*",
+    "passlib.*",
+    "jose.*",
+]
+ignore_missing_imports = true
+
+# ------------------------------------------------------------------------------
+# Pytest — Test Runner
+# asyncio_mode=auto: automatically detect and run async tests.
+# testpaths: restrict test discovery to the tests/ directory.
+# ------------------------------------------------------------------------------
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --strict-markers --tb=short"
+markers = [
+    "integration: marks tests requiring external services (PostgreSQL, Redis, Qdrant)",
+    "unit: marks pure unit tests with no external dependencies",
+]
+
+# ------------------------------------------------------------------------------
+# Coverage — Code Coverage Reporting
+# Measures test coverage for the app/ source tree, excluding tests themselves.
+# ------------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["app"]
+omit = ["tests/*", "migrations/*"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.",
+]
