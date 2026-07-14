@@ -8,15 +8,11 @@ backend. The application factory pattern enables:
     only when the app starts, not at import time.
   - Clean shutdown: Resources are released gracefully on shutdown.
 
-Phase 1 scope:
-  - Health check endpoint for container orchestration.
-  - Lifespan management for database engine.
-  - Structured logging initialization.
-
-Future phases will add:
-  - Phase 2: Auth middleware, CORS, CSRF, rate limiting, API routes.
-  - Phase 3: Memory pipeline endpoints.
-  - Phase 4: Celery task triggers.
+Phase 2 additions:
+  - Global Exception Handlers (AtlasOSError)
+  - CORS Middleware
+  - Rate Limiting Middleware
+  - Core API Routers (Auth, Tenants, Users)
 """
 
 from __future__ import annotations
@@ -26,6 +22,7 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 
 from app import __version__
@@ -33,6 +30,11 @@ from app.core.config import get_settings
 from app.core.database import async_engine
 from app.core.logging import get_logger, setup_logging
 
+# Middlewares & Handlers
+from app.api.middlewares import RateLimitMiddleware, register_exception_handlers
+
+# Routers
+from app.api.routers import auth, tenants, users
 
 logger = get_logger(__name__)
 
@@ -45,14 +47,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     Startup:
       - Initialize structured logging.
       - Log application start with version and environment.
-      - Verify database engine connectivity (pool warmup).
 
     Shutdown:
-      - Dispose the async database engine (closes all pooled connections).
-      - Log clean shutdown confirmation.
-
-    The lifespan context manager replaces the deprecated @app.on_event()
-    hooks, providing deterministic startup/shutdown ordering.
+      - Dispose the async database engine.
     """
     # --- Startup ---
     setup_logging()
@@ -79,9 +76,11 @@ def create_app() -> FastAPI:
     Application factory for the AtlasOS FastAPI backend.
 
     Creates and configures a FastAPI application instance with:
-      - Metadata (title, version, description) for OpenAPI docs.
-      - ORJSONResponse as default response class for faster serialization.
-      - Lifespan context manager for startup/shutdown.
+      - Metadata for OpenAPI docs.
+      - ORJSONResponse as default.
+      - Middlewares (CORS, Rate Limiting).
+      - Exception Handlers.
+      - API Routers.
       - Health check endpoint.
 
     Returns:
@@ -105,7 +104,39 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json" if settings.is_development else None,
     )
 
-    # Register routes
+    # Register Exception Handlers
+    register_exception_handlers(application)
+
+    # Configure CORS
+    origins = [
+        "http://localhost:3000",
+        "https://localhost:3000",
+    ]
+    if not settings.is_development:
+        origins = [] # Add production origins here
+
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
+    )
+
+    # Configure Rate Limiting Middleware
+    application.add_middleware(
+        RateLimitMiddleware,
+        requests_per_minute=600 if settings.is_development else 60,
+    )
+
+    # Register Routers
+    api_prefix = "/api/v1"
+    application.include_router(auth.router, prefix=api_prefix)
+    application.include_router(tenants.router, prefix=api_prefix)
+    application.include_router(users.router, prefix=api_prefix)
+
+    # Register Health Route
     _register_health_routes(application)
 
     return application
@@ -114,16 +145,6 @@ def create_app() -> FastAPI:
 def _register_health_routes(application: FastAPI) -> None:
     """
     Register system health check endpoints.
-
-    The /health endpoint is used by:
-      - Docker Compose healthchecks to determine container readiness.
-      - Load balancers to route traffic only to healthy instances.
-      - Monitoring systems to track service availability.
-
-    It intentionally does NOT check downstream dependencies (database, Redis)
-    because a failing dependency should not cause the API container itself
-    to be marked unhealthy and restarted. Dependency health is monitored
-    separately.
     """
 
     @application.get(
@@ -136,9 +157,6 @@ def _register_health_routes(application: FastAPI) -> None:
     async def health_check() -> dict[str, str]:
         """
         Health check endpoint.
-
-        Returns:
-            A dictionary with status and version information.
         """
         return {
             "status": "healthy",
