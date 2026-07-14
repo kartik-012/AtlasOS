@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     QDRANT_PORT: int = 6333
     QDRANT_GRPC_PORT: int = 6334
 
+    @property
+    def QDRANT_URL(self) -> str:
+        """Construct the Qdrant REST URL from host and port."""
+        return f"http://{self.QDRANT_HOST}:{self.QDRANT_PORT}"
+
     # --------------------------------------------------------------------------
     # Security & Authentication
     # --------------------------------------------------------------------------

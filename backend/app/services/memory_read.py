@@ -36,7 +36,7 @@ class MemoryReadService:
         self._session = session
         self._embedding = embedding_provider
         self._vector_repo = vector_repo
-        
+
         self._episodic_repo = EpisodicMemoryRepository(session)
         self._semantic_repo = SemanticMemoryRepository(session)
 
@@ -61,11 +61,9 @@ class MemoryReadService:
         # 1. Embed Query
         query_vector = await self._embedding.get_embedding(query)
 
-        # 2. Qdrant Search (returns cosine similarity)
-        # We fetch more than `limit` from Qdrant because the re-ranking
-        # might reorder them, and we want a good candidate pool.
+        # 2. Qdrant Search — fetch more candidates than needed for re-ranking
         fetch_limit = min(limit * 3, 100)
-        
+
         raw_results = await self._vector_repo.search(
             query_vector=query_vector,
             tenant_id=tenant_id,
@@ -86,10 +84,10 @@ class MemoryReadService:
         for point in raw_results:
             sim_score = point.score
             imp_score = point.payload.get("importance_score", 0.5) if point.payload else 0.5
-            
+
             # Formula: w1 * Similarity + w2 * Importance
             composite = (self.w_sim * sim_score) + (self.w_imp * imp_score)
-            
+
             ranked_candidates.append({
                 "id": uuid.UUID(point.id),
                 "type": point.payload.get("memory_type") if point.payload else "unknown",
@@ -100,7 +98,7 @@ class MemoryReadService:
 
         # Sort by composite score descending
         ranked_candidates.sort(key=lambda x: x["comp"], reverse=True)
-        
+
         # Slice to requested limit
         top_k = ranked_candidates[:limit]
 
@@ -112,11 +110,10 @@ class MemoryReadService:
         sem_memories = await self._semantic_repo.get_by_ids(tenant_id, sem_ids)
 
         # Build lookup dict
-        db_memories = {}
+        db_memories: dict[uuid.UUID, object] = {}
         for em in ep_memories:
             db_memories[em.id] = em
         for sm in sem_memories:
-            # Skip superseded semantic memories
             if sm.superseded_by is None:
                 db_memories[sm.id] = sm
 
@@ -132,15 +129,15 @@ class MemoryReadService:
                     id=db_record.id,
                     memory_type=cand["type"],
                     content=db_record.content,
-                    metadata=db_record.metadata_,
+                    metadata=db_record.metadata or {},
                     importance_score=cand["imp"],
                     similarity_score=cand["sim"],
                     composite_score=cand["comp"],
                     created_at=db_record.created_at,
                 )
             )
-            
-            # Async increment access counts
+
+            # Increment access counts
             if cand["type"] == "episodic":
                 await self._episodic_repo.increment_access_count(db_record.id)
             else:

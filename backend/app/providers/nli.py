@@ -29,6 +29,8 @@ class HTTPNLIProvider(NLIProvider):
     def __init__(self, base_url: str | None = None, threshold: float = 0.85) -> None:
         settings = get_settings()
         self.base_url = base_url or settings.NLI_SERVICE_URL
+        if not self.base_url.endswith("/v1/nli"):
+            self.base_url = self.base_url.rstrip("/") + "/v1/nli"
         self.threshold = threshold
 
     async def check_contradiction(

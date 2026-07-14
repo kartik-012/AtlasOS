@@ -27,9 +27,11 @@ class HTTPEmbeddingProvider(EmbeddingProvider):
     def __init__(self, base_url: str | None = None) -> None:
         settings = get_settings()
         # In a real deployment, this would be an internal Docker DNS name
-        # e.g., "http://embedder-service:8080/v1/embeddings"
+        # e.g., "http://inference:8080"
         self.base_url = base_url or settings.EMBEDDING_SERVICE_URL
-        self._dimension = 1024
+        if not self.base_url.endswith("/v1/embeddings"):
+            self.base_url = self.base_url.rstrip("/") + "/v1/embeddings"
+        self._dimension = settings.EMBEDDING_DIMENSION
 
     @property
     def dimension(self) -> int:

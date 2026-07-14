@@ -90,16 +90,40 @@ services:
     restart: unless-stopped
 
   # ----------------------------------------------------------------------------
+  # AI Inference Service
+  # ----------------------------------------------------------------------------
+  inference:
+    build:
+      context: ./inference
+      dockerfile: Dockerfile
+    container_name: atlasos-inference
+    ports:
+      - "8080:8080"
+    networks:
+      - atlasos_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          memory: 4G
+        limits:
+          memory: 8G
+
+  # ----------------------------------------------------------------------------
   # FastAPI Backend — Core API Server
-  # Handles all REST endpoints, authentication, memory pipelines.
-  # Hot-reloads in development via volume mount.
   # ----------------------------------------------------------------------------
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: atlasos-backend
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: /bin/bash /app/entrypoint.sh
     env_file: .env
     ports:
       - "8000:8000"
@@ -113,6 +137,8 @@ services:
       redis:
         condition: service_healthy
       qdrant:
+        condition: service_healthy
+      inference:
         condition: service_healthy
     restart: unless-stopped
 

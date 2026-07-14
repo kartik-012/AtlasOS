@@ -13,7 +13,8 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import InternalServerError
+from app.core.config import get_settings
+from app.core.exceptions import ExternalServiceError
 from app.core.logging import get_logger
 from app.models.memory import EpisodicMemory, SemanticMemory
 from app.models.tenant import Tenant
@@ -40,7 +41,7 @@ class MemoryWriteService:
     3. Run NLI contradiction check (if semantic).
     4. Upsert to Qdrant.
     5. Flush to Postgres.
-    6. If Postgres flush fails, fire a background task to delete from Qdrant.
+    6. If Postgres flush fails, fire compensating delete on Qdrant.
     """
 
     def __init__(
@@ -53,11 +54,11 @@ class MemoryWriteService:
         self._session = session
         self._embedding = embedding_provider
         self._vector_repo = vector_repo
-        
+
         self._episodic_repo = EpisodicMemoryRepository(session)
         self._semantic_repo = SemanticMemoryRepository(session)
         self._tenant_repo = TenantRepository(session)
-        
+
         # Instantiate contradiction service
         log_repo = ContradictionLogRepository(session)
         self._contradiction_service = ContradictionService(
@@ -79,14 +80,14 @@ class MemoryWriteService:
         Episodic memories bypass contradiction checks because they are
         immutable observations of events.
         """
+        settings = get_settings()
         memory_id = uuid.uuid4()
         now = int(datetime.now(timezone.utc).timestamp())
-        
+
         # 1. Generate Embedding
         vector = await self._embedding.get_embedding(content)
-        
-        # 2. Heuristic Importance Score (simplistic for Phase 3)
-        # In production, this might call another ML model.
+
+        # 2. Heuristic Importance Score
         importance = self._calculate_base_importance(content)
 
         # 3. Upsert to Qdrant First
@@ -107,16 +108,18 @@ class MemoryWriteService:
                 tenant_id=tenant_id,
                 external_user_id=external_user_id,
                 content=content,
-                metadata_=metadata or {},
+                embedding_model=settings.EMBEDDING_MODEL,
+                metadata=metadata or {},
                 importance_score=importance,
-                vector_id=memory_id,  # 1:1 mapping
+                vector_id=memory_id,
+                source="api",
             )
             self._session.add(memory)
             await self._session.flush()
-            
+
             logger.info("episodic_memory_written", id=str(memory_id))
             return memory
-            
+
         except Exception as e:
             # Compensating transaction: attempt to remove orphaned Qdrant point
             logger.error(
@@ -132,7 +135,9 @@ class MemoryWriteService:
                     id=str(memory_id),
                     error=str(cleanup_error),
                 )
-            raise InternalServerError("Failed to write memory.") from e
+            raise ExternalServiceError(
+                message="Failed to write episodic memory.",
+            ) from e
 
     async def write_semantic(
         self,
@@ -145,21 +150,22 @@ class MemoryWriteService:
         """
         Write a consolidated semantic memory (fact).
         Executes the NLI contradiction pipeline.
-        
+
         Returns:
             Tuple of (memory_object, contradiction_detected, log_id).
         """
+        settings = get_settings()
         tenant = await self._tenant_repo.get_by_id(tenant_id)
         if not tenant:
-            raise InternalServerError("Tenant not found in context.")
+            raise ExternalServiceError(message="Tenant not found in context.")
 
         memory_id = uuid.uuid4()
         now = int(datetime.now(timezone.utc).timestamp())
-        
+
         # 1. Generate Embedding
         vector = await self._embedding.get_embedding(content)
         importance = self._calculate_base_importance(content)
-        
+
         # 2. Contradiction Check
         has_contradiction, log_id = await self._contradiction_service.check_for_contradiction(
             tenant=tenant,
@@ -187,30 +193,32 @@ class MemoryWriteService:
                 tenant_id=tenant_id,
                 external_user_id=external_user_id,
                 content=content,
+                embedding_model=settings.EMBEDDING_MODEL,
                 source_episodic_id=source_episodic_id,
-                metadata_=metadata or {},
+                metadata=metadata or {},
                 importance_score=importance,
                 vector_id=memory_id,
             )
             self._session.add(memory)
             await self._session.flush()
-            
+
             logger.info("semantic_memory_written", id=str(memory_id))
             return memory, has_contradiction, log_id
-            
+
         except Exception as e:
             logger.error("postgres_semantic_write_failed", error=str(e))
             try:
                 await self._vector_repo.delete_point(memory_id)
             except Exception:
                 pass
-            raise InternalServerError("Failed to write semantic memory.") from e
+            raise ExternalServiceError(
+                message="Failed to write semantic memory.",
+            ) from e
 
     def _calculate_base_importance(self, text: str) -> float:
         """
-        Simple heuristic for Phase 3. 
-        In prod, an LLM call or distinct lightweight model calculates this.
+        Simple heuristic for Phase 3.
+        In production, an LLM call or dedicated lightweight model calculates this.
         """
-        # Assign a base score of 0.5, bump it slightly for longer texts.
         score = 0.5 + min(len(text) / 2000.0, 0.4)
         return round(score, 2)
