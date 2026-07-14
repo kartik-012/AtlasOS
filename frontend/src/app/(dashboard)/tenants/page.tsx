@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -40,7 +40,7 @@ export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
+
   // New Tenant Form State
   const [newName, setNewName] = useState("");
   const [newPolicy, setNewPolicy] = useState("most_recent_wins");
@@ -48,17 +48,13 @@ export default function TenantsPage() {
   const fetchTenants = async () => {
     try {
       setIsLoading(true);
-      // Ensure your backend has this endpoint exposed, or adapt if it's named differently
-      // The current backend has /api/v1/tenant/ endpoints? Wait, the PRD said /admin/tenants
-      // Let's assume there's a way to list them, if not we show an empty list for now.
       const res = await api.get("/tenants");
       setTenants(res.data);
-    } catch (error) {
-      console.error("Failed to fetch tenants", error);
-      // Fallback for demonstration since we might not have a generic list endpoint in the current MVP
+    } catch {
+      // Fallback demo data when backend isn't running
       setTenants([
         { id: "123e4567-e89b-12d3-a456-426614174000", name: "Acme Corp", resolution_policy: "confidence_weighted", created_at: new Date().toISOString() },
-        { id: "987e6543-e21b-12d3-a456-426614174000", name: "Globex Inc", resolution_policy: "manual_review", created_at: new Date().toISOString() }
+        { id: "987e6543-e21b-12d3-a456-426614174000", name: "Globex Inc", resolution_policy: "manual_review", created_at: new Date().toISOString() },
       ]);
     } finally {
       setIsLoading(false);
@@ -72,16 +68,15 @@ export default function TenantsPage() {
   const handleCreateTenant = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // POST /tenants expects { name, resolution_policy }
       await api.post("/tenants", {
         name: newName,
-        resolution_policy: newPolicy
+        resolution_policy: newPolicy,
       });
       toast.success("Tenant created successfully");
       setIsDialogOpen(false);
       setNewName("");
       fetchTenants();
-    } catch (error) {
+    } catch {
       toast.error("Failed to create tenant");
     }
   };
@@ -95,7 +90,7 @@ export default function TenantsPage() {
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
+          <DialogTrigger>
             <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
               <Plus className="mr-2 h-4 w-4" /> Add Tenant
             </Button>
@@ -111,17 +106,22 @@ export default function TenantsPage() {
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="name">Organization Name</Label>
-                  <Input 
-                    id="name" 
+                  <Input
+                    id="name"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    className="bg-background/50 border-white/10" 
-                    required 
+                    className="bg-background/50 border-white/10"
+                    required
                   />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="policy">Resolution Policy</Label>
-                  <Select value={newPolicy} onValueChange={setNewPolicy}>
+                  <Select
+                    value={newPolicy}
+                    onValueChange={(val) => {
+                      if (val !== null) setNewPolicy(val);
+                    }}
+                  >
                     <SelectTrigger className="bg-background/50 border-white/10">
                       <SelectValue placeholder="Select a policy" />
                     </SelectTrigger>
@@ -171,8 +171,8 @@ export default function TenantsPage() {
                     <TableCell className="font-mono text-xs text-muted-foreground">{tenant.id}</TableCell>
                     <TableCell className="font-medium">{tenant.name}</TableCell>
                     <TableCell>
-                      <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary/20 text-primary">
-                        {tenant.resolution_policy.replace(/_/g, ' ')}
+                      <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors border-transparent bg-primary/20 text-primary">
+                        {tenant.resolution_policy.replace(/_/g, " ")}
                       </span>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
