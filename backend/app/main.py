@@ -34,7 +34,7 @@ from app.core.logging import get_logger, setup_logging
 from app.api.middlewares import RateLimitMiddleware, register_exception_handlers
 
 # Routers
-from app.api.routers import auth, tenants, users
+from app.api.routers import auth, tenants, users, memories, working_memory
 
 logger = get_logger(__name__)
 
@@ -135,6 +135,8 @@ def create_app() -> FastAPI:
     application.include_router(auth.router, prefix=api_prefix)
     application.include_router(tenants.router, prefix=api_prefix)
     application.include_router(users.router, prefix=api_prefix)
+    application.include_router(memories.router, prefix=api_prefix)
+    application.include_router(working_memory.router, prefix=api_prefix)
 
     # Register Health Route
     _register_health_routes(application)
