@@ -186,28 +186,27 @@ services:
     restart: unless-stopped
 
   # ----------------------------------------------------------------------------
-  # Next.js Frontend — Developer Console
-  # Serves the admin dashboard, memory explorer, and settings UI.
-  # Built in Phase 5. Commented out until then.
+  # Next.js Developer Console
+  # Phase 5 UI
   # ----------------------------------------------------------------------------
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: atlasos-frontend
-  #   ports:
-  #     - "3000:3000"
-  #   env_file: .env
-  #   volumes:
-  #     - ./frontend:/app
-  #     - /app/node_modules
-  #     - /app/.next
-  #   networks:
-  #     - atlasos_network
-  #   depends_on:
-  #     backend:
-  #       condition: service_started
-  #   restart: unless-stopped
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: atlasos-frontend
+    ports:
+      - "3000:3000"
+    env_file: .env
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - atlasos_network
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
 
 # ==============================================================================
 # Named Volumes — Persistent data storage across container restarts
