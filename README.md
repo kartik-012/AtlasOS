@@ -20,7 +20,7 @@
 *   **Immutable Audit Logging**: Prevents logs tampering using native database-level triggers that raise exceptions on any `UPDATE` or `DELETE` operations.
 *   **Developer Console**: Next.js dashboard featuring API key rotation, interactive memory explorers, real-time logging, and evaluation analytics.
 
----
+
 
 ## 🏛️ System Architecture
 
