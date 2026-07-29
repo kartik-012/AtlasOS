@@ -9,7 +9,6 @@
 **AtlasOS** is a production-grade, multi-tenant AI Memory Operating System designed to provide hierarchical, contextual memory management for AI agents. It orchestrates working, episodic, and semantic memories with built-in natural language contradiction detection, background summarization, validation, and database-level audit logging.
 
 
-
 ## 🚀 Key Features
 
 *   **Hierarchical Memory Engine**:
