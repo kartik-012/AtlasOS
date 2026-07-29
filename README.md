@@ -21,7 +21,6 @@
 *   **Developer Console**: Next.js dashboard featuring API key rotation, interactive memory explorers, real-time logging, and evaluation analytics.
 
 
-
 ## 🏛️ System Architecture
 
 ```mermaid
