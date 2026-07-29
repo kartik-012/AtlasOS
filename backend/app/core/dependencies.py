@@ -87,7 +87,7 @@ async def get_db_session_no_tenant() -> Any:
 
 
 async def get_db_session_with_tenant(
-    tenant_ctx: TenantContext = Depends(lambda: None),
+    tenant_ctx: TenantContext = Depends(get_tenant_context),
 ) -> Any:
     """
     Provide a database session WITH tenant RLS context.

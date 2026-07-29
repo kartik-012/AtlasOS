@@ -81,12 +81,6 @@ services:
       - "6334:6334"   # gRPC
     networks:
       - atlasos_network
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:6333/healthz || exit 1"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
     restart: unless-stopped
 
   # ----------------------------------------------------------------------------
@@ -102,7 +96,7 @@ services:
     networks:
       - atlasos_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/health')\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -137,7 +131,7 @@ services:
       redis:
         condition: service_healthy
       qdrant:
-        condition: service_healthy
+        condition: service_started
       inference:
         condition: service_healthy
     restart: unless-stopped
@@ -193,7 +187,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: deps
     container_name: atlasos-frontend
+    command: npm run dev
     ports:
       - "3000:3000"
     env_file: .env

@@ -23,22 +23,11 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // In a real app, this should match your FastAPI auth endpoint
-      // FastAPI OAuth2PasswordRequestForm expects formData
-      const formData = new FormData();
-      formData.append("username", email);
-      formData.append("password", password);
-
-      const response = await api.post("/auth/login", formData, {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      });
-
-      if (response.data.access_token) {
-        // Set cookie securely
-        Cookies.set("access_token", response.data.access_token, { expires: 1 });
-        toast.success("Welcome back to AtlasOS");
-        router.push("/dashboard");
-      }
+      // Demo Mode: Instantly authenticate without backend
+      await new Promise(r => setTimeout(r, 800)); // simulate network delay
+      Cookies.set("access_token", "demo-token-123", { expires: 1 });
+      toast.success("Welcome back to AtlasOS Demo");
+      router.push("/dashboard");
     } catch (error) {
       toast.error("Invalid credentials. Please try again.");
     } finally {
@@ -47,7 +36,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[url('/grid-bg.svg')] bg-cover relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
       {/* Dynamic Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
       

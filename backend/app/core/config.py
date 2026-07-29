@@ -86,7 +86,7 @@ class Settings(BaseSettings):
     EMBEDDING_PROVIDER: str = "bge-large"
     EMBEDDING_MODEL: str = "BAAI/bge-large-en-v1.5"
     EMBEDDING_DIMENSION: int = 1024
-    EMBEDDING_SERVICE_URL: str = "http://embedding-service:8001"
+    EMBEDDING_SERVICE_URL: str = "http://inference:8080"
     OPENAI_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
     VOYAGEAI_API_KEY: str = ""
@@ -96,7 +96,7 @@ class Settings(BaseSettings):
     # --------------------------------------------------------------------------
     # NLI (Natural Language Inference) Service
     # --------------------------------------------------------------------------
-    NLI_SERVICE_URL: str = "http://nli-service:8002"
+    NLI_SERVICE_URL: str = "http://inference:8080"
     NLI_MODEL: str = "roberta-large-mnli"
 
     # --------------------------------------------------------------------------

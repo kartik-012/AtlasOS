@@ -154,10 +154,25 @@ class AuthService:
 
         await self._user_repo.update_last_login(user)
 
-        access_token = create_access_token(subject=str(user.id))
+        memberships = await self._membership_repo.get_memberships_for_user(user.id)
+        if memberships:
+            membership = memberships[0]
+            access_token = create_access_token(
+                subject=str(user.id),
+                tenant_id=str(membership.tenant_id),
+                role=membership.role,
+            )
+        else:
+            access_token = create_access_token(subject=str(user.id))
+
         refresh_token = create_refresh_token(subject=str(user.id))
 
-        logger.info("user_logged_in", user_id=str(user.id), method="password")
+        logger.info(
+            "user_logged_in",
+            user_id=str(user.id),
+            method="password",
+            tenant_scoped=bool(memberships),
+        )
         return user, access_token, refresh_token
 
     async def refresh_access_token(

@@ -1,24 +1,41 @@
+"use client";
+
+import { useState } from "react";
+import { AuthGuard } from "@/components/layout/auth-guard";
 import { Sidebar } from "@/components/layout/sidebar";
-import { Toaster } from "@/components/ui/sonner";
+import { TopBar } from "@/components/layout/topbar";
+import { Toaster } from "sonner";
+import { WebSocketProvider } from "@/lib/ws-context";
+import { CommandMenu } from "@/components/command-menu";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   return (
-    <div className="h-full relative bg-[#09090b]">
-      <div className="hidden h-full md:flex md:w-72 md:col-span-3 lg:col-span-2 md:flex-col md:fixed md:inset-y-0 z-[80]">
-        <Sidebar />
-      </div>
-      <main className="md:pl-72 h-full">
-        {/* Top glow effect */}
-        <div className="absolute top-0 left-0 right-0 h-[500px] bg-primary/5 rounded-full blur-[150px] pointer-events-none -z-10" />
-        <div className="p-8">
-          {children}
+    <AuthGuard>
+      <WebSocketProvider>
+        <div className="flex h-screen overflow-hidden bg-background">
+        <Sidebar 
+          isMobileOpen={isMobileSidebarOpen} 
+          onMobileClose={() => setIsMobileSidebarOpen(false)} 
+        />
+        
+        <div className="flex flex-col flex-1 w-full md:pl-64">
+          <TopBar onMenuClick={() => setIsMobileSidebarOpen(true)} />
+          
+          <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
+            {children}
+          </main>
         </div>
-      </main>
-      <Toaster theme="dark" />
-    </div>
+
+        <CommandMenu />
+        <Toaster theme="light" />
+      </div>
+      </WebSocketProvider>
+    </AuthGuard>
   );
 }

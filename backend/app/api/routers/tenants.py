@@ -218,12 +218,16 @@ async def create_invite(
         invited_by=tenant_ctx.user_id,
     )
     
-    # In a real system, we'd send an email via Celery here.
-    # For now, we just return the invite object.
+    # In production, dispatch invite email via Celery (token is never logged).
     from app.core.logging import get_logger
     logger = get_logger(__name__)
-    logger.info("invite_token_generated", token=plaintext_token)
-    
+    logger.info(
+        "invite_created",
+        invite_id=str(invite.id),
+        tenant_id=str(tenant_ctx.tenant_id),
+        email=request.email,
+    )
+
     return invite
 
 
