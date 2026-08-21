@@ -9,15 +9,17 @@ in Qdrant to detect logical conflicts before committing them to memory.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Any
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from app.core.logging import get_logger
 from app.models.memory import ContradictionLog, SemanticMemory
-from app.models.tenant import Tenant
-from app.providers.base import NLIProvider
-from app.repositories.memory import ContradictionLogRepository, SemanticMemoryRepository
-from app.repositories.vector import VectorRepository
+
+if TYPE_CHECKING:
+    from app.models.tenant import Tenant
+    from app.providers.base import NLIProvider
+    from app.repositories.memory import ContradictionLogRepository, SemanticMemoryRepository
+    from app.repositories.vector import VectorRepository
 
 logger = get_logger(__name__)
 
@@ -73,7 +75,7 @@ class ContradictionService:
             return False, None
 
         # Step 2: Fetch full text from PG
-        candidate_ids = [uuid.UUID(p.id) for p in candidates]
+        candidate_ids = [uuid.UUID(p.id) for p in candidates]  # type: ignore
         existing_memories = await self._semantic_repo.get_by_ids(tenant.id, candidate_ids)
 
         # Build a map for easy lookup
@@ -81,7 +83,7 @@ class ContradictionService:
 
         # Step 3: Evaluate pairs with NLI Model
         for point in candidates:
-            point_uuid = uuid.UUID(point.id)
+            point_uuid = uuid.UUID(point.id)  # type: ignore
             existing_fact = memory_map.get(point_uuid)
 
             if not existing_fact or existing_fact.superseded_by is not None:
@@ -159,7 +161,7 @@ class ContradictionService:
         # If 'manual_review', resolution stays 'pending'.
 
         # Log the event using the actual ContradictionLog model
-        now = datetime.now(timezone.utc) if auto_resolved else None
+        now = datetime.now(UTC) if auto_resolved else None
         log_entry = ContradictionLog(
             tenant_id=tenant.id,
             new_fact_id=new_fact_id,
@@ -172,7 +174,7 @@ class ContradictionService:
             resolution_policy_applied=policy if auto_resolved else None,
             resolved_at=now,
         )
-        self._log_repo.session.add(log_entry)
-        await self._log_repo.session.flush()
+        self._log_repo.session.add(log_entry)  # type: ignore
+        await self._log_repo.session.flush()  # type: ignore
 
         return log_entry

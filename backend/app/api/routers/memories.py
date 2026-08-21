@@ -7,14 +7,14 @@ Protected by API key permissions or JWT roles.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import TYPE_CHECKING
+
+from fastapi import APIRouter, Depends, status
 
 from app.core.dependencies import (
     TenantContext,
     get_db_session_with_tenant,
     get_tenant_context,
-    require_permission,
     require_role,
 )
 from app.providers.embeddings import HTTPEmbeddingProvider
@@ -29,6 +29,9 @@ from app.schemas.memory import (
 )
 from app.services.memory_read import MemoryReadService
 from app.services.memory_write import MemoryWriteService
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/memories", tags=["Memory"])
 
@@ -78,7 +81,7 @@ async def write_episodic_memory(
         tenant_id=tenant_ctx.tenant_id,
         external_user_id=request.external_user_id,
         content=request.content,
-        metadata=request.metadata,
+        metadata=request.meta_data,
     )
     return MemoryWriteResponse(
         id=memory.id,
@@ -107,7 +110,7 @@ async def write_semantic_memory(
         external_user_id=request.external_user_id,
         content=request.content,
         source_episodic_id=request.source_episodic_id,
-        metadata=request.metadata,
+        metadata=request.meta_data,
     )
     return MemoryWriteResponse(
         id=memory.id,

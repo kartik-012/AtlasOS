@@ -2,46 +2,42 @@
 AtlasOS Memory Write Service.
 
 Orchestrates the complex write pipeline ensuring atomicity between
-the PostgreSQL system-of-record and the Qdrant vector index.
+the PostgreSQL system-of-record, Qdrant vector index, and Knowledge Graph Mesh.
 """
 
 from __future__ import annotations
 
+import contextlib
+import re
 import uuid
-from datetime import datetime, timezone
-from typing import Any
-
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
 
 from app.core.config import get_settings
 from app.core.exceptions import ExternalServiceError
 from app.core.logging import get_logger
 from app.models.memory import EpisodicMemory, SemanticMemory
-from app.models.tenant import Tenant
-from app.providers.base import EmbeddingProvider, NLIProvider
 from app.repositories.memory import (
     ContradictionLogRepository,
     EpisodicMemoryRepository,
     SemanticMemoryRepository,
 )
 from app.repositories.tenant import TenantRepository
-from app.repositories.vector import VectorRepository
 from app.services.contradiction import ContradictionService
+from app.services.graph_service import EntityGraphService
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from app.providers.base import EmbeddingProvider, NLIProvider
+    from app.repositories.vector import VectorRepository
 
 logger = get_logger(__name__)
 
 
 class MemoryWriteService:
     """
-    Service for writing memories.
-
-    Dual-write strategy:
-    1. Generate ID and create model instances.
-    2. Generate embedding.
-    3. Run NLI contradiction check (if semantic).
-    4. Upsert to Qdrant.
-    5. Flush to Postgres.
-    6. If Postgres flush fails, fire compensating delete on Qdrant.
+    Service for writing memories and enriching knowledge graphs.
     """
 
     def __init__(
@@ -58,6 +54,7 @@ class MemoryWriteService:
         self._episodic_repo = EpisodicMemoryRepository(session)
         self._semantic_repo = SemanticMemoryRepository(session)
         self._tenant_repo = TenantRepository(session)
+        self._graph_service = EntityGraphService(session)
 
         # Instantiate contradiction service
         log_repo = ContradictionLogRepository(session)
@@ -76,19 +73,17 @@ class MemoryWriteService:
         metadata: dict[str, Any] | None = None,
     ) -> EpisodicMemory:
         """
-        Write a raw episodic memory to the system.
-        Episodic memories bypass contradiction checks because they are
-        immutable observations of events.
+        Write a raw episodic memory to the system, extract entity triples into Knowledge Graph Mesh.
         """
         settings = get_settings()
         memory_id = uuid.uuid4()
-        now = int(datetime.now(timezone.utc).timestamp())
+        now = int(datetime.now(UTC).timestamp())
 
         # 1. Generate Embedding
         vector = await self._embedding.get_embedding(content)
 
-        # 2. Heuristic Importance Score
-        importance = self._calculate_base_importance(content)
+        # 2. Multi-Factor Importance Evaluation
+        importance = self._calculate_multi_factor_importance(content)
 
         # 3. Upsert to Qdrant First
         await self._vector_repo.upsert_point(
@@ -109,7 +104,7 @@ class MemoryWriteService:
                 external_user_id=external_user_id,
                 content=content,
                 embedding_model=settings.EMBEDDING_MODEL,
-                metadata=metadata or {},
+                meta_data=metadata or {},
                 importance_score=importance,
                 vector_id=memory_id,
                 source="api",
@@ -117,24 +112,26 @@ class MemoryWriteService:
             self._session.add(memory)
             await self._session.flush()
 
+            # 5. Extract & Store Knowledge Graph Triples
+            await self._graph_service.extract_and_store_triples(
+                tenant_id=tenant_id,
+                external_user_id=external_user_id,
+                text=content,
+                source_memory_id=memory_id,
+                source_memory_type="episodic",
+            )
+
             logger.info("episodic_memory_written", id=str(memory_id))
             return memory
 
         except Exception as e:
-            # Compensating transaction: attempt to remove orphaned Qdrant point
-            logger.error(
+            logger.exception(
                 "postgres_write_failed_rolling_back_qdrant",
                 id=str(memory_id),
                 error=str(e),
             )
-            try:
+            with contextlib.suppress(Exception):
                 await self._vector_repo.delete_point(memory_id)
-            except Exception as cleanup_error:
-                logger.critical(
-                    "qdrant_rollback_failed",
-                    id=str(memory_id),
-                    error=str(cleanup_error),
-                )
             raise ExternalServiceError(
                 message="Failed to write episodic memory.",
             ) from e
@@ -148,11 +145,7 @@ class MemoryWriteService:
         metadata: dict[str, Any] | None = None,
     ) -> tuple[SemanticMemory, bool, uuid.UUID | None]:
         """
-        Write a consolidated semantic memory (fact).
-        Executes the NLI contradiction pipeline.
-
-        Returns:
-            Tuple of (memory_object, contradiction_detected, log_id).
+        Write a consolidated semantic memory (fact) with NLI contradiction checking & entity graph extraction.
         """
         settings = get_settings()
         tenant = await self._tenant_repo.get_by_id(tenant_id)
@@ -160,11 +153,11 @@ class MemoryWriteService:
             raise ExternalServiceError(message="Tenant not found in context.")
 
         memory_id = uuid.uuid4()
-        now = int(datetime.now(timezone.utc).timestamp())
+        now = int(datetime.now(UTC).timestamp())
 
         # 1. Generate Embedding
         vector = await self._embedding.get_embedding(content)
-        importance = self._calculate_base_importance(content)
+        importance = self._calculate_multi_factor_importance(content)
 
         # 2. Contradiction Check
         has_contradiction, log_id = await self._contradiction_service.check_for_contradiction(
@@ -195,30 +188,52 @@ class MemoryWriteService:
                 content=content,
                 embedding_model=settings.EMBEDDING_MODEL,
                 source_episodic_id=source_episodic_id,
-                metadata=metadata or {},
+                meta_data=metadata or {},
                 importance_score=importance,
                 vector_id=memory_id,
             )
             self._session.add(memory)
             await self._session.flush()
 
+            # 5. Extract & Store Knowledge Graph Triples
+            await self._graph_service.extract_and_store_triples(
+                tenant_id=tenant_id,
+                external_user_id=external_user_id,
+                text=content,
+                source_memory_id=memory_id,
+                source_memory_type="semantic",
+            )
+
             logger.info("semantic_memory_written", id=str(memory_id))
             return memory, has_contradiction, log_id
 
         except Exception as e:
-            logger.error("postgres_semantic_write_failed", error=str(e))
-            try:
+            logger.exception("postgres_semantic_write_failed", error=str(e))
+            with contextlib.suppress(Exception):
                 await self._vector_repo.delete_point(memory_id)
-            except Exception:
-                pass
             raise ExternalServiceError(
                 message="Failed to write semantic memory.",
             ) from e
 
-    def _calculate_base_importance(self, text: str) -> float:
+    def _calculate_multi_factor_importance(self, text: str) -> float:
         """
-        Simple heuristic for Phase 3.
-        In production, an LLM call or dedicated lightweight model calculates this.
+        Multi-Factor Importance Evaluator:
+        - Base text length weight (0.2)
+        - Salience keywords (preferences, names, dates, constraints) (0.5)
+        - Specificity & Entity density (0.3)
         """
-        score = 0.5 + min(len(text) / 2000.0, 0.4)
-        return round(score, 2)
+        base_score = min(len(text) / 500.0, 0.2)
+        salience_keywords = [
+            "always", "never", "prefer", "like", "dislike", "hate", "love",
+            "must", "important", "crucial", "work", "live", "email", "phone",
+        ]
+        keyword_matches = sum(1 for kw in salience_keywords if re.search(rf"\b{kw}\b", text, re.IGNORECASE))
+        salience_score = min(keyword_matches * 0.15, 0.5)
+
+        # Entity density proxy (capitalized words / numbers)
+        capitalized = len(re.findall(r"\b[A-Z][a-z]+\b", text))
+        numbers = len(re.findall(r"\b\d+\b", text))
+        density_score = min((capitalized + numbers) * 0.05, 0.3)
+
+        total = 0.3 + base_score + salience_score + density_score
+        return round(min(total, 1.0), 2)

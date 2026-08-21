@@ -22,9 +22,9 @@ This enables automated quality gates in CI pipelines.
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime
 from typing import TYPE_CHECKING, Any
+from datetime import datetime
+import uuid
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
@@ -33,6 +33,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TenantScopedMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    pass
+
     from app.models.tenant import Tenant
     from app.models.user import User
 
@@ -124,10 +126,7 @@ class EvaluationRun(UUIDPrimaryKeyMixin, TenantScopedMixin, Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<EvaluationRun(id={self.id}, "
-            f"run_type='{self.run_type}', status='{self.status}')>"
-        )
+        return f"<EvaluationRun(id={self.id}, run_type='{self.run_type}', status='{self.status}')>"
 
 
 class EvaluationMetric(UUIDPrimaryKeyMixin, Base):

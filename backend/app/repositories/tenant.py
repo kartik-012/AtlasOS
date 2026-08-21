@@ -10,16 +10,17 @@ themselves are the root entity that defines the scope.
 
 from __future__ import annotations
 
-import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.auth import TenantMembership
 from app.models.tenant import Tenant
-from app.models.user import User
 from app.repositories.base import BaseRepository
+
+if TYPE_CHECKING:
+    import uuid
 
 
 class TenantRepository(BaseRepository[Tenant]):
@@ -127,6 +128,8 @@ class TenantMembershipRepository(BaseRepository[TenantMembership]):
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+    
+    get_memberships_for_user = get_user_memberships
 
     async def get_tenant_members(
         self,

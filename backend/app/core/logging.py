@@ -1,57 +1,67 @@
 """
 AtlasOS Structured Logging Configuration.
 
-Configures structlog for consistent, machine-parseable log output across
-the entire backend application and Celery workers.
-
-Design decisions:
-  - JSON output in production: Enables log aggregation tools (ELK, Datadog,
-    CloudWatch) to parse and index log fields automatically.
-  - Console output in development: Human-readable colored output for local
-    debugging without needing a log viewer.
-  - Bound context (service, environment): Every log line includes the
-    service name and environment, enabling filtering in multi-service
-    deployments.
-  - ISO 8601 timestamps: Unambiguous, timezone-aware, sortable.
-  - CallsiteParameterAdder: Adds filename, function name, and line number
-    to every log entry for traceability.
-
-Usage:
-    from app.core.logging import get_logger
-
-    logger = get_logger(__name__)
-    logger.info("memory_created", tenant_id=str(tenant_id), memory_type="episodic")
+Configures structlog (with fallback to stdlib logging) for consistent,
+machine-parseable log output across the entire backend application and Celery workers.
 """
 
 from __future__ import annotations
 
 import logging
 import sys
+from typing import Any
 
-import structlog
+try:
+    import structlog
+    HAS_STRUCTLOG = True
+except ImportError:
+    HAS_STRUCTLOG = False
 
 from app.core.config import get_settings
 
 
+class StdlibLoggerWrapper:
+    """Fallback wrapper matching structlog interface when structlog is not present."""
+
+    def __init__(self, logger: logging.Logger, context: dict[str, Any] | None = None) -> None:
+        self._logger = logger
+        self._context = context or {}
+
+    def bind(self, **kwargs: Any) -> StdlibLoggerWrapper:
+        new_ctx = {**self._context, **kwargs}
+        return StdlibLoggerWrapper(self._logger, new_ctx)
+
+    def info(self, event: str, **kwargs: Any) -> None:
+        merged = {**self._context, **kwargs}
+        self._logger.info(f"{event} {merged if merged else ''}")
+
+    def warning(self, event: str, **kwargs: Any) -> None:
+        merged = {**self._context, **kwargs}
+        self._logger.warning(f"{event} {merged if merged else ''}")
+
+    def error(self, event: str, **kwargs: Any) -> None:
+        merged = {**self._context, **kwargs}
+        self._logger.error(f"{event} {merged if merged else ''}")
+
+    def exception(self, event: str, **kwargs: Any) -> None:
+        merged = {**self._context, **kwargs}
+        self._logger.exception(f"{event} {merged if merged else ''}")
+
+    def critical(self, event: str, **kwargs: Any) -> None:
+        merged = {**self._context, **kwargs}
+        self._logger.critical(f"{event} {merged if merged else ''}")
+
+
 def setup_logging() -> None:
-    """
-    Configure structlog and stdlib logging for the application.
-
-    Must be called once at application startup (in the FastAPI lifespan
-    or Celery worker initialization).
-
-    Configures:
-      - structlog processors for context binding, timestamps, and formatting.
-      - stdlib logging to route through structlog for unified output.
-      - Log level from application settings.
-    """
+    """Configure structlog and stdlib logging for the application."""
     settings = get_settings()
-
-    # Determine log level from settings
     log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
 
-    # Shared processors applied to every log event
-    shared_processors: list[structlog.types.Processor] = [
+    if not HAS_STRUCTLOG:
+        logging.basicConfig(level=log_level, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+        return
+
+    shared_processors: list[Any] = [
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_log_level,
         structlog.stdlib.add_logger_name,
@@ -59,20 +69,11 @@ def setup_logging() -> None:
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
         structlog.processors.UnicodeDecoder(),
-        structlog.processors.CallsiteParameterAdder(
-            [
-                structlog.processors.CallsiteParameter.FILENAME,
-                structlog.processors.CallsiteParameter.FUNC_NAME,
-                structlog.processors.CallsiteParameter.LINENO,
-            ],
-        ),
     ]
 
     if settings.is_production:
-        # Production: JSON output for log aggregation pipelines
         renderer = structlog.processors.JSONRenderer()
     else:
-        # Development: colored, human-readable console output
         renderer = structlog.dev.ConsoleRenderer(colors=True)
 
     structlog.configure(
@@ -85,9 +86,6 @@ def setup_logging() -> None:
         cache_logger_on_first_use=True,
     )
 
-    # Configure the stdlib root logger to use structlog's formatter.
-    # This ensures that third-party libraries using stdlib logging
-    # (e.g., SQLAlchemy, uvicorn) also produce structured output.
     formatter = structlog.stdlib.ProcessorFormatter(
         processors=[
             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
@@ -103,30 +101,14 @@ def setup_logging() -> None:
     root_logger.addHandler(handler)
     root_logger.setLevel(log_level)
 
-    # Suppress overly verbose loggers from third-party libraries
-    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
-    logging.getLogger("sqlalchemy.engine").setLevel(
-        logging.INFO if settings.is_development else logging.WARNING,
-    )
 
-
-def get_logger(name: str) -> structlog.stdlib.BoundLogger:
-    """
-    Create a bound logger with service context.
-
-    Every logger created through this factory automatically includes:
-      - service: "atlasos" (identifies the service in multi-service deployments)
-      - environment: The current runtime environment (development, production, etc.)
-
-    Args:
-        name: Logger name, typically __name__ of the calling module.
-
-    Returns:
-        A structlog BoundLogger with pre-bound context fields.
-    """
+def get_logger(name: str) -> Any:
+    """Create a logger with service context."""
     settings = get_settings()
-    logger: structlog.stdlib.BoundLogger = structlog.get_logger(name)
-    return logger.bind(
-        service="atlasos",
-        environment=settings.ENVIRONMENT,
-    )
+    if HAS_STRUCTLOG:
+        logger = structlog.get_logger(name)
+        return logger.bind(
+            service="atlasos",
+            environment=settings.ENVIRONMENT,
+        )
+    return StdlibLoggerWrapper(logging.getLogger(name), {"service": "atlasos", "environment": settings.ENVIRONMENT})

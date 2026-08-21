@@ -21,21 +21,23 @@ async def init_qdrant() -> None:
     filtering (tenant_id, memory_type, superseded).
     """
     settings = get_settings()
-    
+
     print(f"Connecting to Qdrant at {settings.QDRANT_HOST}:{settings.QDRANT_PORT}...")
     client = AsyncQdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
-    
+
     collection_name = "atlas_memories"
-    
+
     try:
         # Check if collection exists
         collections_response = await client.get_collections()
         collection_names = [c.name for c in collections_response.collections]
-        
+
         if collection_name in collection_names:
             print(f"Collection '{collection_name}' already exists.")
         else:
-            print(f"Creating collection '{collection_name}' with vector size {settings.EMBEDDING_DIMENSION}...")
+            print(
+                f"Creating collection '{collection_name}' with vector size {settings.EMBEDDING_DIMENSION}..."
+            )
             await client.create_collection(
                 collection_name=collection_name,
                 vectors_config=models.VectorParams(
@@ -44,38 +46,39 @@ async def init_qdrant() -> None:
                 ),
             )
             print("Collection created successfully.")
-            
+
         # Create payload indices for fast filtering
         print("Ensuring payload indices exist...")
-        
+
         # tenant_id index is critical for multi-tenant isolation
         await client.create_payload_index(
             collection_name=collection_name,
             field_name="tenant_id",
             field_schema=models.PayloadSchemaType.KEYWORD,
         )
-        
+
         # memory_type index (episodic or semantic)
         await client.create_payload_index(
             collection_name=collection_name,
             field_name="memory_type",
             field_schema=models.PayloadSchemaType.KEYWORD,
         )
-        
+
         # superseded index (boolean) to quickly filter out outdated memories
         await client.create_payload_index(
             collection_name=collection_name,
             field_name="superseded",
             field_schema=models.PayloadSchemaType.BOOL,
         )
-        
+
         print("Qdrant initialization complete.")
-        
+
     except Exception as e:
         print(f"Error initializing Qdrant: {e}")
         sys.exit(1)
     finally:
         await client.close()
+
 
 if __name__ == "__main__":
     asyncio.run(init_qdrant())

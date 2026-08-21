@@ -7,14 +7,16 @@ All three entities are tenant-scoped and rely on RLS for isolation.
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import select, and_
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.models.auth import ApiKey, Session, TeamInvite
 from app.repositories.base import BaseRepository
+
+if TYPE_CHECKING:
+    import uuid
 
 
 class ApiKeyRepository(BaseRepository[ApiKey]):
@@ -124,7 +126,7 @@ class ApiKeyRepository(BaseRepository[ApiKey]):
         Args:
             api_key: The ApiKey instance to update.
         """
-        api_key.last_used_at = datetime.now(timezone.utc)
+        api_key.last_used_at = datetime.now(UTC)
         await self._session.flush()
 
 
@@ -160,7 +162,7 @@ class SessionRepository(BaseRepository[Session]):
         Returns:
             List of active Session instances.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         stmt = select(Session).where(
             Session.user_id == user_id,
             Session.revoked_at.is_(None),
@@ -212,9 +214,12 @@ class SessionRepository(BaseRepository[Session]):
         Returns:
             The updated Session instance.
         """
-        return await self.update(session, {
-            "revoked_at": datetime.now(timezone.utc),
-        })
+        return await self.update(
+            session,
+            {
+                "revoked_at": datetime.now(UTC),
+            },
+        )
 
     async def revoke_all_user_sessions(self, user_id: uuid.UUID) -> int:
         """
@@ -227,7 +232,7 @@ class SessionRepository(BaseRepository[Session]):
             Number of sessions revoked.
         """
         sessions = await self.get_active_sessions_for_user(user_id)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for sess in sessions:
             sess.revoked_at = now
         await self._session.flush()
@@ -338,10 +343,13 @@ class TeamInviteRepository(BaseRepository[TeamInvite]):
         Returns:
             The updated TeamInvite instance.
         """
-        return await self.update(invite, {
-            "status": "accepted",
-            "accepted_at": datetime.now(timezone.utc),
-        })
+        return await self.update(
+            invite,
+            {
+                "status": "accepted",
+                "accepted_at": datetime.now(UTC),
+            },
+        )
 
     async def mark_revoked(self, invite: TeamInvite) -> TeamInvite:
         """

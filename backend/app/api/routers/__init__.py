@@ -3,29 +3,31 @@ AtlasOS API Routers Package.
 """
 
 from app.api.routers import (
+    audit,
     auth,
-    tenants,
-    users,
-    memories,
-    working_memory,
-    webhooks,
     contradictions,
     evaluations,
-    audit,
+    graph,
+    memories,
     system,
+    tenants,
+    users,
+    webhooks,
+    working_memory,
     ws,
 )
 
 __all__ = [
+    "audit",
     "auth",
-    "tenants",
-    "users",
-    "memories",
-    "working_memory",
-    "webhooks",
     "contradictions",
     "evaluations",
-    "audit",
+    "graph",
+    "memories",
     "system",
+    "tenants",
+    "users",
+    "webhooks",
+    "working_memory",
     "ws",
 ]

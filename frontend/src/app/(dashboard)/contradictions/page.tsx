@@ -20,7 +20,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -35,32 +34,29 @@ const mockContradictions = [
 
 export default function ContradictionsPage() {
   const [contradictions, setContradictions] = useState(mockContradictions);
-  const [loading, setLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const fetchData = async () => {
     try {
-      setLoading(true);
       const res = await api.get("/contradictions");
       setContradictions(res.data);
-    } catch (error) {
+    } catch {
       console.warn("Using mock data");
       setContradictions(mockContradictions);
-    } finally {
-      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData();
+  }, []);
 
   const handleResolve = async (id: string, resolution: string) => {
     try {
       await api.post(`/contradictions/${id}/resolve`, { resolution });
       toast.success(`Resolved contradiction: ${resolution}`);
       setContradictions(contradictions.map(c => c.id === id ? { ...c, status: "resolved", resolution } : c));
-    } catch (error) {
+    } catch {
       toast.success(`Mock resolved: ${resolution}`);
       setContradictions(contradictions.map(c => c.id === id ? { ...c, status: "resolved", resolution } : c));
     }
@@ -79,8 +75,8 @@ export default function ContradictionsPage() {
           <h1 className="text-3xl font-bold text-glow">Contradictions</h1>
           <p className="text-muted-foreground mt-2">Manage memory conflicts detected by the NLI engine.</p>
         </div>
-        <Button variant="outline" onClick={fetchData} disabled={loading}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        <Button variant="outline" onClick={fetchData}>
+          <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
         </Button>
       </div>
@@ -142,11 +138,11 @@ export default function ContradictionsPage() {
               {item.status === 'pending' && (
                 <CardFooter className="border-t border-border/50 pt-4 bg-background/20">
                   <Dialog open={selectedId === item.id} onOpenChange={(open) => setSelectedId(open ? item.id : null)}>
-                    <DialogTrigger asChild>
-                      <Button id={`btn-resolve-${item.id}`} className="w-full bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30">
-                        <Layers className="w-4 h-4 mr-2" />
-                        Resolve Conflict
-                      </Button>
+                    <DialogTrigger
+                      render={<Button id={`btn-resolve-${item.id}`} className="w-full bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30" />}
+                    >
+                      <Layers className="w-4 h-4 mr-2" />
+                      Resolve Conflict
                     </DialogTrigger>
                     <DialogContent className="glass-card">
                       <DialogHeader>

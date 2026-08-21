@@ -11,15 +11,17 @@ context.
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.auth import OAuthAccount
 from app.models.user import User
 from app.repositories.base import BaseRepository
+
+if TYPE_CHECKING:
+    import uuid
 
 
 class UserRepository(BaseRepository[User]):
@@ -83,9 +85,12 @@ class UserRepository(BaseRepository[User]):
         Returns:
             The updated User instance.
         """
-        return await self.update(user, {
-            "last_login_at": datetime.now(timezone.utc),
-        })
+        return await self.update(
+            user,
+            {
+                "last_login_at": datetime.now(UTC),
+            },
+        )
 
     async def set_password(self, user: User, password_hash: str) -> User:
         """

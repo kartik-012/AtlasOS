@@ -8,13 +8,15 @@ request context (IP, user agent) is captured consistently.
 
 from __future__ import annotations
 
-import uuid
-from typing import Any
-
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import TYPE_CHECKING, Any
 
 from app.core.logging import get_logger
 from app.repositories.audit import AuditLogRepository
+
+if TYPE_CHECKING:
+    import uuid
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 

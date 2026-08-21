@@ -18,16 +18,18 @@ Design decisions:
 from __future__ import annotations
 
 import time
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
 
-from fastapi import FastAPI, Request
 from fastapi.responses import ORJSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from starlette.responses import Response
 
 from app.core.config import get_settings
 from app.core.exceptions import AtlasOSError
 from app.core.logging import get_logger
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI, Request
+    from starlette.responses import Response
 
 logger = get_logger(__name__)
 
@@ -35,6 +37,7 @@ logger = get_logger(__name__)
 # =============================================================================
 # Exception Handler
 # =============================================================================
+
 
 def register_exception_handlers(app: FastAPI) -> None:
     """
@@ -144,8 +147,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         try:
             # Import here to avoid circular imports at module level
             import redis.asyncio as aioredis
+
             settings = get_settings()
-            redis_client = aioredis.from_url(
+            redis_client = aioredis.from_url(  # type: ignore
                 settings.REDIS_URL,
                 decode_responses=True,
             )
@@ -221,6 +225,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 # Lightweight decode — just extract sub claim
                 import base64
                 import json
+
                 parts = token.split(".")
                 if len(parts) >= 2:
                     # Pad the base64 string

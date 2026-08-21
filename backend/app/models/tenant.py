@@ -16,8 +16,6 @@ Tenant isolation is enforced at three levels:
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
@@ -26,6 +24,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    pass
     from app.models.auth import ApiKey, Session, TeamInvite, TenantMembership
     from app.models.evaluation import EvaluationRun
     from app.models.memory import (

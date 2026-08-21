@@ -9,12 +9,16 @@ values match the allowed options defined in the database CHECK constraints.
 from __future__ import annotations
 
 import re
-import uuid
+from typing import TYPE_CHECKING
 from datetime import datetime
+import uuid
 
 from pydantic import Field, field_validator
 
 from app.schemas.common import AtlasBaseSchema
+
+if TYPE_CHECKING:
+    pass
 
 
 class TenantCreateRequest(AtlasBaseSchema):

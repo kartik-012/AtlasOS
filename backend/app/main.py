@@ -18,23 +18,38 @@ Phase 2 additions:
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from collections.abc import AsyncIterator
-from typing import Any
+from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 
 from app import __version__
-from app.core.config import get_settings
-from app.core.database import async_engine
-from app.core.logging import get_logger, setup_logging
 
 # Middlewares & Handlers
 from app.api.middlewares import RateLimitMiddleware, register_exception_handlers
 
 # Routers
-from app.api.routers import auth, tenants, users, memories, working_memory, webhooks, contradictions, evaluations, audit, system, ws
+from app.api.routers import (
+    audit,
+    auth,
+    contradictions,
+    evaluations,
+    graph,
+    memories,
+    system,
+    tenants,
+    users,
+    webhooks,
+    working_memory,
+    ws,
+)
+from app.core.config import get_settings
+from app.core.database import async_engine
+from app.core.logging import get_logger, setup_logging
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 logger = get_logger(__name__)
 
@@ -113,7 +128,7 @@ def create_app() -> FastAPI:
         "https://localhost:3000",
     ]
     if not settings.is_development:
-        origins = [] # Add production origins here
+        origins = []  # Add production origins here
 
     application.add_middleware(
         CORSMiddleware,
@@ -141,6 +156,7 @@ def create_app() -> FastAPI:
     application.include_router(contradictions.router, prefix=api_prefix)
     application.include_router(evaluations.router, prefix=api_prefix)
     application.include_router(audit.router, prefix=api_prefix)
+    application.include_router(graph.router, prefix=api_prefix)
     application.include_router(system.router, prefix=api_prefix)
     application.include_router(ws.router, prefix=api_prefix)
 

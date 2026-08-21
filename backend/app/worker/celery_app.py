@@ -3,6 +3,7 @@ AtlasOS Celery Application Instance.
 """
 
 from celery import Celery
+
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -31,6 +32,7 @@ celery_app.conf.update(
 )
 
 from app.worker.beat_schedule import BEAT_SCHEDULE
+
 celery_app.conf.beat_schedule = BEAT_SCHEDULE
 
 

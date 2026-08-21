@@ -5,12 +5,10 @@ import { motion } from "framer-motion";
 import { ShieldAlert, Search, Filter, Database, Server, User, ChevronDown, ChevronUp } from "lucide-react";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Select,
@@ -32,26 +30,23 @@ const mockAuditLogs = [
 
 export default function AuditPage() {
   const [logs, setLogs] = useState(mockAuditLogs);
-  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchLogs();
-  }, []);
-
   const fetchLogs = async () => {
     try {
-      setLoading(true);
       const res = await api.get("/audit-logs");
       setLogs(res.data);
-    } catch (error) {
+    } catch {
       console.warn("Using mock data");
-    } finally {
-      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchLogs();
+  }, []);
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = log.resource.toLowerCase().includes(searchTerm.toLowerCase()) || log.actor.toLowerCase().includes(searchTerm.toLowerCase());
@@ -95,7 +90,7 @@ export default function AuditPage() {
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={actionFilter} onValueChange={setActionFilter}>
+              <Select value={actionFilter} onValueChange={(val) => { if (val !== null) setActionFilter(val); }}>
                 <SelectTrigger id="filter-audit" className="w-[180px] bg-background/50">
                   <SelectValue placeholder="Action type" />
                 </SelectTrigger>

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -20,21 +19,21 @@ async def websocket_endpoint(websocket: WebSocket, token: str | None = None) -> 
     """
     await websocket.accept()
     settings = get_settings()
-    
+
     redis_client = Redis.from_url(settings.REDIS_URL, decode_responses=True)
     pubsub = redis_client.pubsub()
-    
+
     try:
         await pubsub.subscribe("atlasos_events")
         logger.info("WebSocket connected, subscribed to atlasos_events")
-        
+
         async for message in pubsub.listen():
             if message["type"] == "message":
                 data = message["data"]
                 try:
                     await websocket.send_text(data)
                 except Exception as e:
-                    logger.error("Failed to send message to websocket client", error=str(e))
+                    logger.exception("Failed to send message to websocket client", error=str(e))
                     break
     except WebSocketDisconnect:
         logger.info("WebSocket client disconnected normally")

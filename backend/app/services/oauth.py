@@ -21,8 +21,7 @@ Design decisions:
 from __future__ import annotations
 
 import secrets
-import uuid
-from typing import Any
+from typing import TYPE_CHECKING
 from urllib.parse import urlencode
 
 import httpx
@@ -31,10 +30,12 @@ from app.core.config import get_settings
 from app.core.exceptions import AuthenticationError, ExternalServiceError
 from app.core.logging import get_logger
 from app.core.security import create_access_token, create_refresh_token
-from app.models.user import User
 from app.repositories.user import OAuthAccountRepository, UserRepository
 
-from sqlalchemy.ext.asyncio import AsyncSession
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from app.models.user import User
 
 logger = get_logger(__name__)
 
@@ -274,7 +275,8 @@ class OAuthService:
             email = user_data.get("email")
             if not email:
                 emails_response = await client.get(
-                    _GITHUB_EMAILS_URL, headers=headers,
+                    _GITHUB_EMAILS_URL,
+                    headers=headers,
                 )
                 if emails_response.status_code == 200:
                     emails = emails_response.json()

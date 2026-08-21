@@ -9,12 +9,10 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   ResponsiveContainer,
   RadarChart,
@@ -54,24 +52,21 @@ const mockEvaluations = [
 
 export default function EvaluationsPage() {
   const [evaluations, setEvaluations] = useState(mockEvaluations);
-  const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const fetchData = async () => {
     try {
-      setLoading(true);
       const res = await api.get("/evaluations");
       setEvaluations(res.data);
-    } catch (error) {
+    } catch {
       console.warn("Using mock data");
-    } finally {
-      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData();
+  }, []);
 
   const handleRunEvaluation = async () => {
     setRunning(true);

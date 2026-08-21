@@ -8,17 +8,20 @@ handles post-registration profile operations.
 
 from __future__ import annotations
 
-import uuid
-from typing import Any
-
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import TYPE_CHECKING, Any
 
 from app.core.exceptions import NotFoundError
 from app.core.logging import get_logger
-from app.models.user import User
 from app.repositories.tenant import TenantMembershipRepository
 from app.repositories.user import UserRepository
 from app.schemas.user import UserTenantInfo
+
+if TYPE_CHECKING:
+    import uuid
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from app.models.user import User
 
 logger = get_logger(__name__)
 

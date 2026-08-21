@@ -26,7 +26,6 @@ class EmbeddingProvider(ABC):
         Returns:
             A list of floats representing the dense vector.
         """
-        pass
 
     @abstractmethod
     async def get_embeddings(self, texts: list[str]) -> list[list[float]]:
@@ -39,7 +38,6 @@ class EmbeddingProvider(ABC):
         Returns:
             List of embedding vectors corresponding to the inputs.
         """
-        pass
 
     @property
     @abstractmethod
@@ -47,7 +45,6 @@ class EmbeddingProvider(ABC):
         """
         Return the dimensionality of the vectors produced by this provider.
         """
-        pass
 
 
 class NLIProvider(ABC):
@@ -74,4 +71,3 @@ class NLIProvider(ABC):
               - is_contradiction (bool): True if contradiction detected.
               - confidence (float): Model confidence score [0.0, 1.0].
         """
-        pass

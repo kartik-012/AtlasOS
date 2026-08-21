@@ -26,9 +26,9 @@ Design decisions:
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime
 from typing import TYPE_CHECKING
+from datetime import datetime
+import uuid
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -37,6 +37,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TenantScopedMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    pass
+
     from app.models.tenant import Tenant
     from app.models.user import User
 
@@ -186,10 +188,7 @@ class OAuthAccount(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<OAuthAccount(provider='{self.provider}', "
-            f"user_id={self.user_id})>"
-        )
+        return f"<OAuthAccount(provider='{self.provider}', user_id={self.user_id})>"
 
 
 class Session(UUIDPrimaryKeyMixin, TenantScopedMixin, Base):
@@ -346,10 +345,7 @@ class ApiKey(UUIDPrimaryKeyMixin, TenantScopedMixin, TimestampMixin, Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<ApiKey(id={self.id}, name='{self.name}', "
-            f"prefix='{self.key_prefix}')>"
-        )
+        return f"<ApiKey(id={self.id}, name='{self.name}', prefix='{self.key_prefix}')>"
 
 
 class TeamInvite(UUIDPrimaryKeyMixin, TenantScopedMixin, Base):
@@ -436,7 +432,4 @@ class TeamInvite(UUIDPrimaryKeyMixin, TenantScopedMixin, Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<TeamInvite(id={self.id}, email='{self.email}', "
-            f"status='{self.status}')>"
-        )
+        return f"<TeamInvite(id={self.id}, email='{self.email}', status='{self.status}')>"

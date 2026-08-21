@@ -4,14 +4,8 @@ AtlasOS Phase 2 Unit Tests — Security Core.
 Tests password hashing, JWT token lifecycle, and API Key generation.
 """
 
-import time
-from datetime import datetime, timezone
 from uuid import uuid4
 
-import pytest
-from jose import jwt
-
-from app.core.config import get_settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -92,6 +86,7 @@ def test_session_token_generation():
 
     # Manual hash check
     import hashlib
+
     expected_hash = hashlib.sha256(plaintext.encode()).hexdigest()
 
     assert token_hash == expected_hash

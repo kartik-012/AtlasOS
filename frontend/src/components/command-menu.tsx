@@ -1,20 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Command } from "cmdk";
-import { Search, LayoutDashboard, Users, Database, Key, X, Activity, Cpu, AlertTriangle, BarChart3, Globe, ScrollText, Settings } from "lucide-react";
+import {
+  Search,
+  LayoutDashboard,
+  Users,
+  Database,
+  Key,
+  X,
+  Activity,
+  Cpu,
+  AlertTriangle,
+  BarChart3,
+  Globe,
+  ScrollText,
+  Settings,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function CommandMenu() {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((open) => !open);
+        setOpen((prev) => !prev);
+      }
+      if (e.key === "Escape") {
+        setOpen(false);
       }
     };
 
@@ -27,11 +44,6 @@ export function CommandMenu() {
       document.removeEventListener("open-command-menu", handleCustomOpen);
     };
   }, []);
-
-  const runCommand = (path: string) => {
-    setOpen(false);
-    router.push(path);
-  };
 
   const navItems = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, color: "text-primary" },
@@ -47,6 +59,20 @@ export function CommandMenu() {
     { label: "Settings", href: "/settings", icon: Settings, color: "text-gray-400" },
   ];
 
+  const filteredItems = useMemo(() => {
+    if (!query.trim()) return navItems;
+    const lower = query.toLowerCase();
+    return navItems.filter(
+      (item) => item.label.toLowerCase().includes(lower) || item.href.toLowerCase().includes(lower)
+    );
+  }, [query, navItems]);
+
+  const runCommand = (path: string) => {
+    setOpen(false);
+    setQuery("");
+    router.push(path);
+  };
+
   return (
     <AnimatePresence>
       {open && (
@@ -55,7 +81,7 @@ export function CommandMenu() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           />
           <motion.div
@@ -64,44 +90,47 @@ export function CommandMenu() {
             exit={{ opacity: 0, scale: 0.95, y: -20 }}
             className="fixed left-[50%] top-[15%] z-50 w-full max-w-2xl -translate-x-1/2 p-4"
           >
-            <div className="glass-card overflow-hidden rounded-xl shadow-2xl border bg-card text-foreground">
-              <Command
-                className="flex w-full flex-col bg-transparent"
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") setOpen(false);
-                }}
-              >
-                <div className="flex items-center border-b border-border px-4">
-                  <Search className="mr-2 h-5 w-5 text-muted-foreground" />
-                  <Command.Input
-                    autoFocus
-                    placeholder="Search all sections, settings, memories..."
-                    className="flex h-14 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 text-foreground"
-                  />
-                  <button onClick={() => setOpen(false)} className="ml-2 text-muted-foreground hover:text-foreground">
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-                
-                <Command.List className="max-h-[350px] overflow-y-auto overflow-x-hidden p-2">
-                  <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
-                    No results found.
-                  </Command.Empty>
-                  
-                  <Command.Group heading="Navigation" className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                    {navItems.map((item) => (
-                      <Command.Item
+            <div className="glass-card overflow-hidden rounded-xl shadow-2xl border border-border bg-card text-foreground">
+              <div className="flex items-center border-b border-border px-4">
+                <Search className="mr-2 h-5 w-5 text-muted-foreground" />
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search all sections, settings, memories..."
+                  className="flex h-14 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground text-foreground"
+                />
+                <button
+                  onClick={() => setOpen(false)}
+                  className="ml-2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="max-h-[350px] overflow-y-auto overflow-x-hidden p-2">
+                {filteredItems.length === 0 ? (
+                  <div className="py-6 text-center text-sm text-muted-foreground">
+                    No results found for &ldquo;{query}&rdquo;
+                  </div>
+                ) : (
+                  <div>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                      Navigation
+                    </div>
+                    {filteredItems.map((item) => (
+                      <button
                         key={item.href}
-                        onSelect={() => runCommand(item.href)}
-                        className="relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2.5 text-sm outline-none aria-selected:bg-secondary aria-selected:text-foreground hover:bg-secondary transition-colors my-0.5"
+                        onClick={() => runCommand(item.href)}
+                        className="w-full relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2.5 text-sm outline-none hover:bg-secondary transition-colors my-0.5 text-left text-foreground"
                       >
                         <item.icon className={`mr-3 h-4 w-4 ${item.color}`} />
                         <span>{item.label}</span>
-                      </Command.Item>
+                      </button>
                     ))}
-                  </Command.Group>
-                </Command.List>
-              </Command>
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         </>

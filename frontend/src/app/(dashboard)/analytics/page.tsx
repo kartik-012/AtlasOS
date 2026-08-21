@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { Activity, Database, Zap } from "lucide-react";
 
+interface UsageDataPoint {
+  date: string;
+  requests: number;
+  tokens: number;
+  storage_mb: number;
+}
+
 // Mock data used when backend is offline
-const mockUsageData = Array.from({ length: 30 }, (_, i) => {
+const mockUsageData: UsageDataPoint[] = Array.from({ length: 30 }, (_, i) => {
   const date = new Date();
   date.setDate(date.getDate() - (29 - i));
   return {
@@ -18,8 +25,7 @@ const mockUsageData = Array.from({ length: 30 }, (_, i) => {
 });
 
 export default function AnalyticsPage() {
-  const [data, setData] = useState<any[]>(mockUsageData);
-  const [loading, setLoading] = useState(false);
+  const [data] = useState<UsageDataPoint[]>(mockUsageData);
 
   const latestStats = data[data.length - 1] || { requests: 0, storage_mb: 0, tokens: 0 };
 

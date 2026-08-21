@@ -6,12 +6,16 @@ Pydantic v2 schemas for creating, listing, and accepting team invitations.
 
 from __future__ import annotations
 
-import uuid
+from typing import TYPE_CHECKING
 from datetime import datetime
+import uuid
 
 from pydantic import EmailStr, Field, field_validator
 
 from app.schemas.common import AtlasBaseSchema
+
+if TYPE_CHECKING:
+    pass
 
 
 class InviteCreateRequest(AtlasBaseSchema):

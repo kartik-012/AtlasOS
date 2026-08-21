@@ -57,18 +57,18 @@ class HTTPEmbeddingProvider(EmbeddingProvider):
                 )
                 response.raise_for_status()
                 data = response.json()
-                
+
                 # Expecting OpenAI-compatible response format:
                 # { "data": [ {"embedding": [0.1, 0.2, ...]} ] }
                 embeddings = [item["embedding"] for item in data.get("data", [])]
-                
+
                 if len(embeddings) != len(texts):
                     raise ValueError("Mismatch between input count and embedding count")
-                    
+
                 return embeddings
-                
+
             except (httpx.RequestError, httpx.HTTPStatusError, ValueError, KeyError) as e:
-                logger.error(
+                logger.exception(
                     "embedding_service_error",
                     error=str(e),
                     url=self.base_url,

@@ -20,9 +20,8 @@ Design decisions:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
-
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from app.core.exceptions import (
     AuthenticationError,
@@ -40,11 +39,15 @@ from app.core.security import (
     verify_api_key,
     verify_password,
 )
-from app.models.auth import ApiKey
-from app.models.user import User
 from app.repositories.auth import ApiKeyRepository, SessionRepository
 from app.repositories.tenant import TenantMembershipRepository
 from app.repositories.user import UserRepository
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from app.models.auth import ApiKey
+    from app.models.user import User
 
 logger = get_logger(__name__)
 
@@ -154,7 +157,7 @@ class AuthService:
 
         await self._user_repo.update_last_login(user)
 
-        memberships = await self._membership_repo.get_memberships_for_user(user.id)
+        memberships = await self._membership_repo.get_user_memberships(user.id)
         if memberships:
             membership = memberships[0]
             access_token = create_access_token(
@@ -230,9 +233,7 @@ class AuthService:
         Raises:
             AuthenticationError: If current password is wrong.
         """
-        if user.password_hash is None or not verify_password(
-            current_password, user.password_hash
-        ):
+        if user.password_hash is None or not verify_password(current_password, user.password_hash):
             raise AuthenticationError(
                 message="Current password is incorrect.",
             )
@@ -357,7 +358,7 @@ class AuthService:
             if verify_api_key(raw_key, candidate.key_hash):
                 # Check expiration
                 if candidate.expires_at is not None:
-                    if candidate.expires_at < datetime.now(timezone.utc):
+                    if candidate.expires_at < datetime.now(UTC):
                         raise AuthenticationError(
                             message="API key has expired.",
                         )

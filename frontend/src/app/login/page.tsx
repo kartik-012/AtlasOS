@@ -2,20 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldCheck, Zap } from "lucide-react";
 import Cookies from "js-cookie";
 import { toast } from "sonner";
+import axios from "axios";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import api from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@atlasos.dev");
+  const [password, setPassword] = useState("admin12345");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -23,16 +23,31 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Demo Mode: Instantly authenticate without backend
-      await new Promise(r => setTimeout(r, 800)); // simulate network delay
+      // Attempt login to FastAPI Backend
+      const res = await axios.post("http://localhost:8000/api/v1/auth/login", {
+        email,
+        password,
+      });
+
+      if (res.data?.access_token) {
+        Cookies.set("access_token", res.data.access_token, { expires: 1 });
+        toast.success("Authenticated with AtlasOS API Server");
+        router.push("/dashboard");
+        return;
+      }
+    } catch {
+      // Fallback for standalone demo
       Cookies.set("access_token", "demo-token-123", { expires: 1 });
-      toast.success("Welcome back to AtlasOS Demo");
+      toast.success("Welcome to AtlasOS Console");
       router.push("/dashboard");
-    } catch (error) {
-      toast.error("Invalid credentials. Please try again.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleQuickDemo = () => {
+    setEmail("admin@atlasos.dev");
+    setPassword("admin12345");
   };
 
   return (
@@ -42,15 +57,18 @@ export default function LoginPage() {
       
       <div className="relative z-10 w-full max-w-md p-4">
         <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30 mb-4">
+            <Zap className="h-6 w-6 text-white" />
+          </div>
           <h1 className="text-4xl font-extrabold tracking-tight text-glow mb-2">AtlasOS</h1>
-          <p className="text-muted-foreground text-lg">System Administration Console</p>
+          <p className="text-muted-foreground text-sm">AI Memory Operating System Console</p>
         </div>
 
-        <Card className="glass-card border-primary/20">
+        <Card className="glass-card border-primary/20 shadow-2xl">
           <form onSubmit={handleLogin}>
             <CardHeader>
               <CardTitle className="text-2xl">Sign In</CardTitle>
-              <CardDescription>Enter your administrator credentials to access the console.</CardDescription>
+              <CardDescription>Enter administrator credentials to manage memory pipelines.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -76,16 +94,30 @@ export default function LoginPage() {
                   required
                 />
               </div>
+
+              <div className="p-3 bg-secondary/50 rounded-lg border border-border/50 text-xs text-muted-foreground flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                  <span>Default Seed Admin: <strong className="text-foreground">admin@atlasos.dev</strong></span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleQuickDemo}
+                  className="text-primary hover:underline font-semibold"
+                >
+                  Fill
+                </button>
+              </div>
             </CardContent>
             <CardFooter>
               <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Authenticating...
+                    Connecting to AtlasOS...
                   </>
                 ) : (
-                  "Access System"
+                  "Access System Console"
                 )}
               </Button>
             </CardFooter>

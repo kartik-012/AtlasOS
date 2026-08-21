@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Key, Copy, Check, Trash2, Shield, Clock } from "lucide-react";
+import { Plus, Key, Copy, Check, Trash2 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -42,28 +42,25 @@ const mockApiKeys = [
 
 export default function ApiKeysPage() {
   const [keys, setKeys] = useState(mockApiKeys);
-  const [loading, setLoading] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [createdKey, setCreatedKey] = useState("");
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    fetchKeys();
-  }, []);
-
   const fetchKeys = async () => {
     try {
-      setLoading(true);
       const res = await api.get("/api-keys");
       setKeys(res.data);
-    } catch (error) {
+    } catch {
       console.warn("Using mock data for API keys");
       setKeys(mockApiKeys);
-    } finally {
-      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchKeys();
+  }, []);
 
   const handleCreateKey = async () => {
     if (!newKeyName.trim()) {
@@ -75,7 +72,7 @@ export default function ApiKeysPage() {
       setCreatedKey(res.data.key); // Unmasked key
       fetchKeys();
       toast.success("API key created");
-    } catch (error) {
+    } catch {
       // Mock creation
       const newKey = {
         id: Math.random().toString(),
@@ -97,7 +94,7 @@ export default function ApiKeysPage() {
       await api.delete(`/api-keys/${id}`);
       fetchKeys();
       toast.success("Key revoked successfully");
-    } catch (error) {
+    } catch {
       setKeys(keys.map(k => k.id === id ? { ...k, status: "revoked" } : k));
       toast.success("Mock key revoked");
     }
@@ -127,10 +124,10 @@ export default function ApiKeysPage() {
           setIsDialogOpen(open);
           if (!open) setCreatedKey("");
         }}>
-          <DialogTrigger asChild>
-            <Button id="btn-create-key" className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" /> Create Secret Key
-            </Button>
+          <DialogTrigger
+            render={<Button id="btn-create-key" className="bg-primary text-primary-foreground hover:bg-primary/90" />}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Create Secret Key
           </DialogTrigger>
           <DialogContent className="glass-card sm:max-w-[425px]">
             <DialogHeader>
@@ -156,7 +153,7 @@ export default function ApiKeysPage() {
               <div className="grid gap-4 py-4">
                 <div className="rounded-md bg-amber-500/10 p-4 border border-amber-500/20">
                   <p className="text-sm text-amber-500 mb-2 font-medium">Please save this secret key somewhere safe and accessible.</p>
-                  <p className="text-sm text-muted-foreground">For security reasons, you won't be able to view it again through your AtlasOS account. If you lose this secret key, you'll need to generate a new one.</p>
+                  <p className="text-sm text-muted-foreground">For security reasons, you won&apos;t be able to view it again through your AtlasOS account. If you lose this secret key, you&apos;ll need to generate a new one.</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Input id="created-key-value" value={createdKey} readOnly className="font-mono bg-background/50" />

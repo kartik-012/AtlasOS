@@ -173,7 +173,11 @@ export default function DashboardPage() {
     apiRequests: 0,
   });
 
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
     // Simulated API fetch
     setMetrics({
       totalTenants: 12,
@@ -264,7 +268,8 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="pt-2">
               <div className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
+                {mounted && (
+                  <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={memoryIngestionData}>
                     <defs>
                       <linearGradient
@@ -340,6 +345,7 @@ export default function DashboardPage() {
                     />
                   </AreaChart>
                 </ResponsiveContainer>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -364,7 +370,8 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="pt-2">
               <div className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
+                {mounted && (
+                  <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={tenantUsageData}
                     layout="vertical"
@@ -399,6 +406,7 @@ export default function DashboardPage() {
                     />
                   </BarChart>
                 </ResponsiveContainer>
+                )}
               </div>
             </CardContent>
           </Card>

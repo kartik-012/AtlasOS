@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Webhook, Plus, Activity, Send, CheckCircle2, XCircle } from "lucide-react";
+import { Webhook, Plus, Send, CheckCircle2, XCircle } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -28,7 +27,16 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
-const mockWebhooks = [
+interface WebhookData {
+  id: string;
+  url: string;
+  description: string;
+  events: string[];
+  status: string;
+  lastDelivery: { status: string; timestamp: string; statusCode: number } | null;
+}
+
+const mockWebhooks: WebhookData[] = [
   {
     id: "wh_1",
     url: "https://api.myapp.com/webhooks/atlas",
@@ -49,25 +57,22 @@ const mockWebhooks = [
 
 export default function WebhooksPage() {
   const [webhooks, setWebhooks] = useState(mockWebhooks);
-  const [loading, setLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({ url: "", description: "", secret: "" });
 
-  useEffect(() => {
-    fetchWebhooks();
-  }, []);
-
   const fetchWebhooks = async () => {
     try {
-      setLoading(true);
       const res = await api.get("/webhooks");
       setWebhooks(res.data);
-    } catch (error) {
+    } catch {
       console.warn("Using mock data");
-    } finally {
-      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchWebhooks();
+  }, []);
 
   const handleCreate = async () => {
     if (!formData.url) {
@@ -80,7 +85,7 @@ export default function WebhooksPage() {
       toast.success("Webhook created");
       fetchWebhooks();
       setIsDialogOpen(false);
-    } catch (error) {
+    } catch {
       const newWh = {
         id: `wh_${Math.random().toString(36).substring(2, 7)}`,
         url: formData.url,
@@ -121,10 +126,10 @@ export default function WebhooksPage() {
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button id="btn-create-webhook" className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" /> Add Webhook
-            </Button>
+          <DialogTrigger
+            render={<Button id="btn-create-webhook" className="bg-primary text-primary-foreground hover:bg-primary/90" />}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Webhook
           </DialogTrigger>
           <DialogContent className="glass-card sm:max-w-[500px]">
             <DialogHeader>

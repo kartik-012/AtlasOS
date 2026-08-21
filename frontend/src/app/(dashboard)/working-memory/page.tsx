@@ -14,7 +14,6 @@ import {
   CardTitle,
   CardDescription
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
 const mockSessions = [
@@ -46,31 +45,28 @@ const mockSessions = [
 
 export default function WorkingMemoryPage() {
   const [sessions, setSessions] = useState(mockSessions);
-  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    fetchSessions();
-  }, []);
 
   const fetchSessions = async () => {
     try {
-      setLoading(true);
       const res = await api.get("/working-memory");
       setSessions(res.data);
-    } catch (error) {
+    } catch {
       console.warn("Using mock data");
-    } finally {
-      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchSessions();
+  }, []);
 
   const handleClear = async (sessionId: string) => {
     try {
       await api.delete(`/working-memory/${sessionId}`);
       setSessions(sessions.filter(s => s.session_id !== sessionId));
       toast.success("Session cleared");
-    } catch (error) {
+    } catch {
       setSessions(sessions.filter(s => s.session_id !== sessionId));
       toast.success("Mock session cleared");
     }
@@ -107,8 +103,8 @@ export default function WorkingMemoryPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button variant="outline" size="icon" onClick={fetchSessions} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <Button variant="outline" size="icon" onClick={fetchSessions}>
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -178,7 +174,8 @@ export default function WorkingMemoryPage() {
   );
 }
 
-function UserIcon(props: any) {
+import React from "react";
+function UserIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -199,12 +196,11 @@ function UserIcon(props: any) {
 }
 
 // Simple JSON syntax highlighter component
-function SyntaxHighlighter({ data }: { data: any }) {
+function SyntaxHighlighter({ data }: { data: unknown }) {
   const jsonStr = JSON.stringify(data, null, 2);
   
   // Very basic regex-based highlighting for demonstration
   const highlighted = jsonStr.split('\n').map((line, i) => {
-    let content = line;
     if (line.includes(':')) {
       const [key, ...rest] = line.split(':');
       const val = rest.join(':');

@@ -17,13 +17,16 @@ Design decisions:
 
 from __future__ import annotations
 
-import uuid
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, select
 
 from app.models.audit import AuditLog
+
+if TYPE_CHECKING:
+    import uuid
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class AuditLogRepository:
@@ -87,7 +90,7 @@ class AuditLogRepository:
             user_agent=user_agent,
             request_body=request_body,
             response_status=response_status,
-            metadata=metadata,
+            meta_data=metadata,
         )
         self._session.add(entry)
         await self._session.flush()
@@ -139,10 +142,6 @@ class AuditLogRepository:
         Returns:
             Total number of audit log entries.
         """
-        stmt = (
-            select(func.count())
-            .select_from(AuditLog)
-            .where(AuditLog.tenant_id == tenant_id)
-        )
+        stmt = select(func.count()).select_from(AuditLog).where(AuditLog.tenant_id == tenant_id)
         result = await self._session.execute(stmt)
         return result.scalar_one()

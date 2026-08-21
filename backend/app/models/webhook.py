@@ -21,9 +21,9 @@ Security:
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime
 from typing import TYPE_CHECKING, Any
+from datetime import datetime
+import uuid
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
@@ -32,6 +32,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TenantScopedMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    pass
+
     from app.models.tenant import Tenant
     from app.models.user import User
 
@@ -210,6 +212,5 @@ class WebhookDelivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     def __repr__(self) -> str:
         return (
-            f"<WebhookDelivery(id={self.id}, "
-            f"event='{self.event_type}', status='{self.status}')>"
+            f"<WebhookDelivery(id={self.id}, event='{self.event_type}', status='{self.status}')>"
         )

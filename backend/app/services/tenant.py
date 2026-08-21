@@ -15,11 +15,8 @@ Design decisions:
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Any
-
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING, Any
 
 from app.core.exceptions import (
     AuthorizationError,
@@ -29,10 +26,16 @@ from app.core.exceptions import (
 )
 from app.core.logging import get_logger
 from app.core.security import generate_session_token, hash_session_token
-from app.models.auth import TenantMembership
-from app.models.tenant import Tenant
 from app.repositories.auth import TeamInviteRepository
 from app.repositories.tenant import TenantMembershipRepository, TenantRepository
+
+if TYPE_CHECKING:
+    import uuid
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from app.models.auth import TenantMembership
+    from app.models.tenant import Tenant
 
 logger = get_logger(__name__)
 
@@ -115,6 +118,11 @@ class TenantService:
                 detail={"tenant_id": str(tenant_id)},
             )
         return tenant
+
+    async def get_tenants_for_user(self, user_id: uuid.UUID) -> list[Tenant]:
+        """Get all tenants the user belongs to."""
+        memberships = await self._membership_repo.get_user_memberships(user_id)
+        return [m.tenant for m in memberships if m.tenant is not None]
 
     async def update_tenant(
         self,
@@ -333,6 +341,7 @@ class TenantService:
         """
         # Check for existing membership
         from app.repositories.user import UserRepository
+
         user_repo = UserRepository(self._session)
         existing_user = await user_repo.get_by_email(email)
         if existing_user is not None:
@@ -356,7 +365,7 @@ class TenantService:
                 )
 
         plaintext_token, token_hash = generate_session_token()
-        expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+        expires_at = datetime.now(UTC) + timedelta(days=7)
 
         invite = await self._invite_repo.create_invite(
             tenant_id=tenant_id,
@@ -405,7 +414,7 @@ class TenantService:
                 message=f"Invitation has already been {invite.status}.",
             )
 
-        if invite.expires_at < datetime.now(timezone.utc):
+        if invite.expires_at < datetime.now(UTC):
             await self._invite_repo.update(invite, {"status": "expired"})
             raise ValidationError(message="Invitation has expired.")
 

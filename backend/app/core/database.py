@@ -26,20 +26,22 @@ RLS integration:
 
 from __future__ import annotations
 
-import uuid
-from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING
 
-from sqlalchemy import event, text
+from sqlalchemy import text
+from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.engine import Engine, create_engine
 
 from app.core.config import get_settings
+
+if TYPE_CHECKING:
+    import uuid
+    from collections.abc import AsyncGenerator
 
 
 def _create_async_engine() -> AsyncEngine:
@@ -137,11 +139,11 @@ async def get_db_session(
     session = async_session_factory()
     try:
         if tenant_id is not None:
-            # SET LOCAL scopes the setting to the current transaction only.
+            # set_config with is_local=true scopes the setting to the current transaction only.
             # This prevents tenant_id leakage across requests when
             # connections are reused from the pool.
             await session.execute(
-                text("SET LOCAL app.current_tenant_id = :tenant_id"),
+                text("SELECT set_config('app.current_tenant_id', :tenant_id, true)"),
                 {"tenant_id": str(tenant_id)},
             )
         yield session

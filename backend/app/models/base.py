@@ -35,7 +35,6 @@ import sqlalchemy as sa
 from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-
 # Naming convention for database constraints.
 # This ensures Alembic can autogenerate meaningful migration names and
 # enables predictable constraint names for debugging and manual SQL.

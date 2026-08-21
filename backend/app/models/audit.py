@@ -29,15 +29,18 @@ The audit log records:
 
 from __future__ import annotations
 
-import uuid
+from typing import TYPE_CHECKING, Any
 from datetime import datetime
-from typing import Any
+import uuid
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, UUIDPrimaryKeyMixin
+
+if TYPE_CHECKING:
+    pass
 
 
 class AuditLog(UUIDPrimaryKeyMixin, Base):
@@ -118,10 +121,10 @@ class AuditLog(UUIDPrimaryKeyMixin, Base):
         nullable=True,
         doc="HTTP response status code.",
     )
-    metadata: Mapped[dict[str, Any] | None] = mapped_column(
+    meta_data: Mapped[dict[str, Any] | None] = mapped_column(
         JSONB,
         nullable=True,
-        doc="Additional context (e.g., changes made, previous values).",
+        doc="Additional structured context (e.g., changes made, error details).",
     )
 
     # WHEN

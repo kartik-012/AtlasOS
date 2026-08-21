@@ -1,7 +1,6 @@
-from logging.config import fileConfig
 import os
 import sys
-from sqlalchemy import pool
+from logging.config import fileConfig
 
 from alembic import context
 
@@ -23,6 +22,7 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 target_metadata = Base.metadata
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -69,6 +69,7 @@ def run_migrations_online() -> None:
 
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

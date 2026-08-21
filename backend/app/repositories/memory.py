@@ -7,21 +7,24 @@ Handles database-level operations matching the schemas defined in Phase 1.
 
 from __future__ import annotations
 
-import uuid
-from typing import Any
+from typing import TYPE_CHECKING
 
 from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.memory import ContradictionLog, EpisodicMemory, SemanticMemory
 from app.repositories.base import BaseRepository
+
+if TYPE_CHECKING:
+    import uuid
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class EpisodicMemoryRepository(BaseRepository[EpisodicMemory]):
     """Repository for Episodic Memories."""
 
     def __init__(self, session: AsyncSession) -> None:
-        super().__init__(model=EpisodicMemory, session=session)
+        super().__init__(model=EpisodicMemory, session=session)  # type: ignore
 
     async def get_by_ids(
         self,
@@ -31,12 +34,12 @@ class EpisodicMemoryRepository(BaseRepository[EpisodicMemory]):
         """Fetch multiple episodic memories by ID."""
         if not ids:
             return []
-        
+
         stmt = select(EpisodicMemory).where(
             EpisodicMemory.tenant_id == tenant_id,
             EpisodicMemory.id.in_(ids),
         )
-        result = await self.session.execute(stmt)
+        result = await self.session.execute(stmt)  # type: ignore
         return list(result.scalars().all())
 
     async def increment_access_count(self, memory_id: uuid.UUID) -> None:
@@ -46,14 +49,14 @@ class EpisodicMemoryRepository(BaseRepository[EpisodicMemory]):
             .where(EpisodicMemory.id == memory_id)
             .values(access_count=EpisodicMemory.access_count + 1)
         )
-        await self.session.execute(stmt)
+        await self.session.execute(stmt)  # type: ignore
 
 
 class SemanticMemoryRepository(BaseRepository[SemanticMemory]):
     """Repository for Semantic Memories."""
 
     def __init__(self, session: AsyncSession) -> None:
-        super().__init__(model=SemanticMemory, session=session)
+        super().__init__(model=SemanticMemory, session=session)  # type: ignore
 
     async def get_by_ids(
         self,
@@ -63,12 +66,12 @@ class SemanticMemoryRepository(BaseRepository[SemanticMemory]):
         """Fetch multiple semantic memories by ID."""
         if not ids:
             return []
-            
+
         stmt = select(SemanticMemory).where(
             SemanticMemory.tenant_id == tenant_id,
             SemanticMemory.id.in_(ids),
         )
-        result = await self.session.execute(stmt)
+        result = await self.session.execute(stmt)  # type: ignore
         return list(result.scalars().all())
 
     async def increment_access_count(self, memory_id: uuid.UUID) -> None:
@@ -78,7 +81,7 @@ class SemanticMemoryRepository(BaseRepository[SemanticMemory]):
             .where(SemanticMemory.id == memory_id)
             .values(access_count=SemanticMemory.access_count + 1)
         )
-        await self.session.execute(stmt)
+        await self.session.execute(stmt)  # type: ignore
 
     async def mark_superseded(
         self,
@@ -95,14 +98,14 @@ class SemanticMemoryRepository(BaseRepository[SemanticMemory]):
             .where(SemanticMemory.id == memory_id)
             .values(superseded_by=superseded_by_id)
         )
-        await self.session.execute(stmt)
+        await self.session.execute(stmt)  # type: ignore
 
 
 class ContradictionLogRepository(BaseRepository[ContradictionLog]):
     """Repository for the Contradiction Log."""
 
     def __init__(self, session: AsyncSession) -> None:
-        super().__init__(model=ContradictionLog, session=session)
+        super().__init__(model=ContradictionLog, session=session)  # type: ignore
 
     async def log_contradiction(
         self,
@@ -122,6 +125,6 @@ class ContradictionLogRepository(BaseRepository[ContradictionLog]):
             winning_fact_id=winning_fact_id,
             confidence_score=confidence_score,
         )
-        self.session.add(log_entry)
-        await self.session.flush()
+        self.session.add(log_entry)  # type: ignore
+        await self.session.flush()  # type: ignore
         return log_entry

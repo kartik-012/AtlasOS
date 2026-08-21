@@ -7,11 +7,11 @@ OAuth2 flows, and API key management.
 
 from __future__ import annotations
 
-import uuid
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.dependencies import (
     TenantContext,
     get_current_user,
@@ -20,7 +20,6 @@ from app.core.dependencies import (
     get_tenant_context,
     require_role,
 )
-from app.models.user import User
 from app.schemas.auth import (
     ApiKeyCreateRequest,
     ApiKeyCreateResponse,
@@ -37,7 +36,11 @@ from app.schemas.auth import (
 from app.schemas.user import UserResponse
 from app.services.auth import AuthService
 from app.services.oauth import OAuthService
-from app.core.config import get_settings
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from app.models.user import User
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -45,6 +48,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 # =============================================================================
 # Standard Registration & Login
 # =============================================================================
+
 
 @router.post(
     "/register",
@@ -57,12 +61,11 @@ async def register(
     session: AsyncSession = Depends(get_db_session_no_tenant),
 ) -> User:
     auth_service = AuthService(session)
-    user = await auth_service.register_user(
+    return await auth_service.register_user(
         email=request.email,
         password=request.password,
         display_name=request.display_name,
     )
-    return user
 
 
 @router.post(
@@ -75,7 +78,7 @@ async def login(
     session: AsyncSession = Depends(get_db_session_no_tenant),
 ) -> TokenResponse:
     auth_service = AuthService(session)
-    user, access_token, refresh_token = await auth_service.login_with_password(
+    _user, access_token, refresh_token = await auth_service.login_with_password(
         email=request.email,
         password=request.password,
     )
@@ -129,6 +132,7 @@ async def change_password(
 # =============================================================================
 # OAuth2 Flows
 # =============================================================================
+
 
 @router.get(
     "/google/login",
@@ -208,6 +212,7 @@ async def github_callback(
 # API Key Management (Tenant Scoped)
 # =============================================================================
 
+
 @router.post(
     "/api-keys",
     response_model=ApiKeyCreateResponse,
@@ -228,7 +233,7 @@ async def create_api_key(
         created_by=tenant_ctx.user_id,
         expires_at=request.expires_at,
     )
-    
+
     # We must manually construct the response because we need to inject the plaintext key
     return ApiKeyCreateResponse(
         id=api_key.id,
@@ -255,13 +260,13 @@ async def list_api_keys(
     session: AsyncSession = Depends(get_db_session_with_tenant),
 ) -> list[ApiKeyResponse]:
     from app.repositories.auth import ApiKeyRepository
+
     repo = ApiKeyRepository(session)
-    keys = await repo.get_active_keys_for_tenant(
+    return await repo.get_active_keys_for_tenant(  # type: ignore
         tenant_id=tenant_ctx.tenant_id,
         offset=skip,
         limit=limit,
     )
-    return keys
 
 
 @router.post(
@@ -276,8 +281,7 @@ async def revoke_api_key(
     session: AsyncSession = Depends(get_db_session_with_tenant),
 ) -> ApiKeyResponse:
     auth_service = AuthService(session)
-    revoked_key = await auth_service.revoke_api_key(
+    return await auth_service.revoke_api_key(  # type: ignore
         key_id=request.key_id,
         tenant_id=tenant_ctx.tenant_id,
     )
-    return revoked_key

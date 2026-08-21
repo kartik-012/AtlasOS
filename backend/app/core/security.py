@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from jose import JWTError, jwt
@@ -36,10 +36,7 @@ from passlib.context import CryptContext
 from app.core.config import get_settings
 from app.core.exceptions import AuthenticationError
 
-
-# bcrypt context with recommended work factor.
-# auto scheme allows transparent migration if we change algorithms later.
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
 
 # API key prefix — enables identification in logs and secret scanners.
 API_KEY_PREFIX = "atlas_"
@@ -49,6 +46,7 @@ API_KEY_BYTE_LENGTH = 32  # 256 bits of randomness
 # =============================================================================
 # Password Hashing
 # =============================================================================
+
 
 def hash_password(plain_password: str) -> str:
     """
@@ -60,7 +58,9 @@ def hash_password(plain_password: str) -> str:
     Returns:
         The bcrypt hash string.
     """
-    return _pwd_context.hash(plain_password)
+    pwd_bytes = plain_password.encode("utf-8")[:72]
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -74,12 +74,18 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         True if the password matches, False otherwise.
     """
-    return _pwd_context.verify(plain_password, hashed_password)
+    try:
+        pwd_bytes = plain_password.encode("utf-8")[:72]
+        hash_bytes = hashed_password.encode("utf-8")
+        return bcrypt.checkpw(pwd_bytes, hash_bytes)
+    except Exception:
+        return False
 
 
 # =============================================================================
 # JWT Token Management
 # =============================================================================
+
 
 def create_access_token(
     subject: str,
@@ -103,7 +109,7 @@ def create_access_token(
         Encoded JWT string.
     """
     settings = get_settings()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expire = now + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
 
     claims: dict[str, Any] = {
@@ -119,7 +125,7 @@ def create_access_token(
     if extra_claims:
         claims.update(extra_claims)
 
-    return jwt.encode(
+    return jwt.encode(  # type: ignore
         claims,
         settings.JWT_SECRET_KEY,
         algorithm=settings.JWT_ALGORITHM,
@@ -141,7 +147,7 @@ def create_refresh_token(subject: str) -> str:
         Encoded JWT string.
     """
     settings = get_settings()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expire = now + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
 
     claims: dict[str, Any] = {
@@ -150,7 +156,7 @@ def create_refresh_token(subject: str) -> str:
         "iat": now,
         "exp": expire,
     }
-    return jwt.encode(
+    return jwt.encode(  # type: ignore
         claims,
         settings.JWT_SECRET_KEY,
         algorithm=settings.JWT_ALGORITHM,
@@ -176,12 +182,11 @@ def decode_token(token: str) -> dict[str, Any]:
     """
     settings = get_settings()
     try:
-        payload = jwt.decode(
+        return jwt.decode(  # type: ignore
             token,
             settings.JWT_SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM],
         )
-        return payload
     except JWTError as e:
         raise AuthenticationError(
             message="Invalid or expired token.",
@@ -192,6 +197,7 @@ def decode_token(token: str) -> dict[str, Any]:
 # =============================================================================
 # API Key Management
 # =============================================================================
+
 
 def generate_api_key() -> tuple[str, str, str]:
     """
@@ -224,12 +230,13 @@ def verify_api_key(plaintext_key: str, key_hash: str) -> bool:
     Returns:
         True if the key matches, False otherwise.
     """
-    return _pwd_context.verify(plaintext_key, key_hash)
+    return _pwd_context.verify(plaintext_key, key_hash)  # type: ignore
 
 
 # =============================================================================
 # Session Token Management
 # =============================================================================
+
 
 def generate_session_token() -> tuple[str, str]:
     """

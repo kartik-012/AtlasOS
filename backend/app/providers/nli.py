@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 class HTTPNLIProvider(NLIProvider):
     """
     NLI provider utilizing an external HTTP inference service.
-    
+
     The service evaluates a Premise and Hypothesis and returns probabilities
     for Entailment, Contradiction, and Neutral.
     """
@@ -40,7 +40,7 @@ class HTTPNLIProvider(NLIProvider):
     ) -> tuple[bool, float]:
         """
         Evaluate if hypothesis contradicts premise via HTTP service.
-        
+
         Returns True if the contradiction probability exceeds the threshold.
         """
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -54,15 +54,15 @@ class HTTPNLIProvider(NLIProvider):
                 )
                 response.raise_for_status()
                 data = response.json()
-                
+
                 # Expected response: { "contradiction": 0.95, "entailment": 0.02, "neutral": 0.03 }
                 contradiction_score = float(data.get("contradiction", 0.0))
-                
+
                 is_contradiction = contradiction_score >= self.threshold
                 return is_contradiction, contradiction_score
-                
+
             except (httpx.RequestError, httpx.HTTPStatusError, ValueError, TypeError) as e:
-                logger.error(
+                logger.exception(
                     "nli_service_error",
                     error=str(e),
                     url=self.base_url,

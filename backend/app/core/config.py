@@ -20,7 +20,6 @@ Design decision — @lru_cache for get_settings():
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Any
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -46,12 +45,8 @@ class Settings(BaseSettings):
     # --------------------------------------------------------------------------
     # PostgreSQL
     # --------------------------------------------------------------------------
-    DATABASE_URL: str = (
-        "postgresql+asyncpg://atlas:atlas_secret@localhost:5432/atlasos"
-    )
-    DATABASE_URL_SYNC: str = (
-        "postgresql+psycopg2://atlas:atlas_secret@localhost:5432/atlasos"
-    )
+    DATABASE_URL: str = "postgresql+asyncpg://atlas:atlas_secret@localhost:5432/atlasos"
+    DATABASE_URL_SYNC: str = "postgresql+psycopg2://atlas:atlas_secret@localhost:5432/atlasos"
 
     # --------------------------------------------------------------------------
     # Redis
@@ -99,6 +94,11 @@ class Settings(BaseSettings):
     NLI_SERVICE_URL: str = "http://inference:8080"
     NLI_MODEL: str = "roberta-large-mnli"
 
+    @property
+    def INFERENCE_SERVICE_URL(self) -> str:
+        """Construct the base AI Inference Service URL."""
+        return self.EMBEDDING_SERVICE_URL
+
     # --------------------------------------------------------------------------
     # Celery Task Queue
     # --------------------------------------------------------------------------
@@ -130,10 +130,7 @@ class Settings(BaseSettings):
         """Validate that the embedding provider is one of the supported options."""
         allowed = {"bge-large", "openai", "gemini", "voyageai", "jina", "custom"}
         if v not in allowed:
-            msg = (
-                f"Invalid EMBEDDING_PROVIDER '{v}'. "
-                f"Must be one of: {', '.join(sorted(allowed))}"
-            )
+            msg = f"Invalid EMBEDDING_PROVIDER '{v}'. Must be one of: {', '.join(sorted(allowed))}"
             raise ValueError(msg)
         return v
 
@@ -143,10 +140,7 @@ class Settings(BaseSettings):
         """Validate the runtime environment identifier."""
         allowed = {"development", "staging", "production", "testing"}
         if v not in allowed:
-            msg = (
-                f"Invalid ENVIRONMENT '{v}'. "
-                f"Must be one of: {', '.join(sorted(allowed))}"
-            )
+            msg = f"Invalid ENVIRONMENT '{v}'. Must be one of: {', '.join(sorted(allowed))}"
             raise ValueError(msg)
         return v
 
@@ -157,10 +151,7 @@ class Settings(BaseSettings):
         allowed = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
         upper = v.upper()
         if upper not in allowed:
-            msg = (
-                f"Invalid LOG_LEVEL '{v}'. "
-                f"Must be one of: {', '.join(sorted(allowed))}"
-            )
+            msg = f"Invalid LOG_LEVEL '{v}'. Must be one of: {', '.join(sorted(allowed))}"
             raise ValueError(msg)
         return upper
 

@@ -20,9 +20,9 @@ sees notifications relevant to their current workspace.
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime
 from typing import TYPE_CHECKING, Any
+from datetime import datetime
+import uuid
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
@@ -31,6 +31,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TenantScopedMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    pass
+
     from app.models.tenant import Tenant
     from app.models.user import User
 
@@ -98,10 +100,10 @@ class Notification(UUIDPrimaryKeyMixin, TenantScopedMixin, Base):
         nullable=True,
         doc="URL to navigate to when the notification is clicked.",
     )
-    metadata: Mapped[dict[str, Any] | None] = mapped_column(
+    meta_data: Mapped[dict[str, Any] | None] = mapped_column(
         JSONB,
         nullable=True,
-        doc="Additional structured data related to the notification.",
+        doc="Additional context depending on type (e.g., entity_id, action_url).",
     )
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
@@ -126,7 +128,4 @@ class Notification(UUIDPrimaryKeyMixin, TenantScopedMixin, Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<Notification(id={self.id}, type='{self.type}', "
-            f"is_read={self.is_read})>"
-        )
+        return f"<Notification(id={self.id}, type='{self.type}', is_read={self.is_read})>"

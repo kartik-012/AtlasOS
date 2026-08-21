@@ -7,13 +7,18 @@ tenant memberships.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_user, get_db_session_no_tenant
-from app.models.user import User
 from app.schemas.user import UserUpdateRequest, UserWithTenantsResponse
 from app.services.user import UserService
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from app.models.user import User
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -29,7 +34,7 @@ async def get_current_user_profile(
 ) -> UserWithTenantsResponse:
     user_service = UserService(session)
     tenants = await user_service.get_user_tenants(current_user.id)
-    
+
     return UserWithTenantsResponse(
         id=current_user.id,
         email=current_user.email,
@@ -59,9 +64,9 @@ async def update_current_user_profile(
         user_id=current_user.id,
         update_data=request.model_dump(exclude_unset=True),
     )
-    
+
     tenants = await user_service.get_user_tenants(updated_user.id)
-    
+
     return UserWithTenantsResponse(
         id=updated_user.id,
         email=updated_user.email,

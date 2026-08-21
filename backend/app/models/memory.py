@@ -40,9 +40,9 @@ Vector store integration:
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime
 from typing import TYPE_CHECKING, Any
+from datetime import datetime
+import uuid
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
@@ -51,6 +51,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TenantScopedMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    pass
+
     from app.models.tenant import Tenant
     from app.models.user import User
 
@@ -138,7 +140,8 @@ class EpisodicMemory(UUIDPrimaryKeyMixin, TenantScopedMixin, TimestampMixin, Bas
         nullable=True,
         doc="Optional session context from the agent (task info, conversation metadata).",
     )
-    metadata: Mapped[dict[str, Any] | None] = mapped_column(
+    meta_data: Mapped[dict[str, Any] | None] = mapped_column(
+        "metadata",
         JSONB,
         nullable=True,
         doc="Arbitrary key-value metadata attached by the caller.",
@@ -181,10 +184,7 @@ class EpisodicMemory(UUIDPrimaryKeyMixin, TenantScopedMixin, TimestampMixin, Bas
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<EpisodicMemory(id={self.id}, "
-            f"external_user_id='{self.external_user_id}')>"
-        )
+        return f"<EpisodicMemory(id={self.id}, external_user_id='{self.external_user_id}')>"
 
 
 class SemanticMemory(UUIDPrimaryKeyMixin, TenantScopedMixin, TimestampMixin, Base):
@@ -270,7 +270,8 @@ class SemanticMemory(UUIDPrimaryKeyMixin, TenantScopedMixin, TimestampMixin, Bas
         server_default=sa.text("0"),
         doc="Number of times this memory has been retrieved.",
     )
-    metadata: Mapped[dict[str, Any] | None] = mapped_column(
+    meta_data: Mapped[dict[str, Any] | None] = mapped_column(
+        "metadata",
         JSONB,
         nullable=True,
         doc="Arbitrary key-value metadata attached by the caller.",
@@ -317,10 +318,7 @@ class SemanticMemory(UUIDPrimaryKeyMixin, TenantScopedMixin, TimestampMixin, Bas
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<SemanticMemory(id={self.id}, "
-            f"external_user_id='{self.external_user_id}')>"
-        )
+        return f"<SemanticMemory(id={self.id}, external_user_id='{self.external_user_id}')>"
 
 
 class ContradictionLog(UUIDPrimaryKeyMixin, TenantScopedMixin, Base):
@@ -434,10 +432,7 @@ class ContradictionLog(UUIDPrimaryKeyMixin, TenantScopedMixin, Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<ContradictionLog(id={self.id}, "
-            f"resolution='{self.resolution}')>"
-        )
+        return f"<ContradictionLog(id={self.id}, resolution='{self.resolution}')>"
 
 
 class CompressionLog(UUIDPrimaryKeyMixin, TenantScopedMixin, Base):
@@ -556,7 +551,4 @@ class CompressionLog(UUIDPrimaryKeyMixin, TenantScopedMixin, Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<CompressionLog(id={self.id}, "
-            f"status='{self.status}')>"
-        )
+        return f"<CompressionLog(id={self.id}, status='{self.status}')>"

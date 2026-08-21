@@ -1,8 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import api from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 interface User {
   id: string;
@@ -25,10 +24,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     // Demo Mode: Automatically set a mock user so the UI can be previewed without a backend
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUser({
       id: "demo-user-123",
       email: "demo@atlasos.app",

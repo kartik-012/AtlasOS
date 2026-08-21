@@ -12,11 +12,13 @@ Keys structure:
 from __future__ import annotations
 
 import json
-import uuid
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
+
+if TYPE_CHECKING:
+    import uuid
 
 logger = get_logger(__name__)
 
@@ -30,7 +32,7 @@ class WorkingMemoryRepository:
         settings = get_settings()
         import redis.asyncio as aioredis
 
-        self.redis = aioredis.from_url(
+        self.redis = aioredis.from_url(  # type: ignore
             settings.REDIS_URL,
             decode_responses=True,
         )
@@ -55,7 +57,7 @@ class WorkingMemoryRepository:
         """
         key = self._make_key(tenant_id, external_user_id, session_id)
         data = await self.redis.hgetall(key)
-        
+
         # Parse nested JSON strings if any
         parsed = {}
         for k, v in data.items():
@@ -77,7 +79,7 @@ class WorkingMemoryRepository:
         Resets the TTL.
         """
         key = self._make_key(tenant_id, external_user_id, session_id)
-        
+
         # Serialize nested dicts/lists to JSON strings for Redis hash storage
         serialized = {}
         for k, v in updates.items():
@@ -107,7 +109,7 @@ class WorkingMemoryRepository:
         """
         key = self._make_key(tenant_id, external_user_id, session_id)
         idx_key = f"wm:idx:{tenant_id}:{external_user_id}"
-        
+
         async with self.redis.pipeline(transaction=True) as pipe:
             pipe.delete(key)
             pipe.srem(idx_key, session_id)

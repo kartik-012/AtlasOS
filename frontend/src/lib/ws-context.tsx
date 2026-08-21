@@ -76,6 +76,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         wsRef.current.close();
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

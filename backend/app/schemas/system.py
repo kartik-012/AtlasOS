@@ -5,6 +5,7 @@ from app.schemas.common import AtlasBaseSchema
 
 class SystemStatsResponse(AtlasBaseSchema):
     """Schema for system statistics response."""
+
     total_tenants: int
     total_memories: int
     total_episodic: int

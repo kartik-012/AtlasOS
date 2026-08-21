@@ -21,13 +21,16 @@ Design decisions:
 
 from __future__ import annotations
 
-import uuid
-from typing import Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.base import Base
+
+if TYPE_CHECKING:
+    import uuid
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 ModelT = TypeVar("ModelT", bound=Base)
 
@@ -41,14 +44,18 @@ class BaseRepository(Generic[ModelT]):
 
     model_class: type[ModelT]
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, model: type[ModelT] | None = None) -> None:
         """
         Initialize the repository with a database session.
 
         Args:
             session: An async SQLAlchemy session, injected by FastAPI DI.
+            model: Optional model class to bind to this repository instance.
         """
         self._session = session
+        self.session = session
+        if model:
+            self.model_class = model
 
     async def get_by_id(self, entity_id: uuid.UUID) -> ModelT | None:
         """
@@ -63,7 +70,7 @@ class BaseRepository(Generic[ModelT]):
         Returns:
             The entity instance, or None if not found.
         """
-        stmt = select(self.model_class).where(self.model_class.id == entity_id)
+        stmt = select(self.model_class).where(self.model_class.id == entity_id)  # type: ignore
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -82,12 +89,7 @@ class BaseRepository(Generic[ModelT]):
         Returns:
             A list of entity instances.
         """
-        stmt = (
-            select(self.model_class)
-            .offset(offset)
-            .limit(limit)
-            .order_by(self.model_class.id)
-        )
+        stmt = select(self.model_class).offset(offset).limit(limit).order_by(self.model_class.id)  # type: ignore
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 

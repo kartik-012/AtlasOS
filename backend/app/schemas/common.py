@@ -8,11 +8,13 @@ behavior and naming conventions.
 
 from __future__ import annotations
 
-import uuid
+from typing import TYPE_CHECKING, Any
 from datetime import datetime
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict
+
+if TYPE_CHECKING:
+    pass
 
 
 class AtlasBaseSchema(BaseModel):

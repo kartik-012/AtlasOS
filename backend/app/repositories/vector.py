@@ -15,14 +15,17 @@ Payload schema for fast filtering:
 
 from __future__ import annotations
 
-import uuid
-from typing import Any
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
-from qdrant_client import AsyncQdrantClient
-from qdrant_client.http import models as rest
+import httpx
+from qdrant_client import AsyncQdrantClient, models as rest
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
+
+if TYPE_CHECKING:
+    import uuid
 
 logger = get_logger(__name__)
 
@@ -30,10 +33,17 @@ logger = get_logger(__name__)
 COLLECTION_NAME = "atlas_memories"
 
 
+@dataclass
+class ScoredPoint:
+    id: str
+    score: float
+    payload: dict[str, Any]
+
+
 class VectorRepository:
     """
     Repository for interacting with the Qdrant vector database.
-    
+
     Provides methods for upserting points, searching by similarity with
     mandatory payload filters, and deleting points.
     """
@@ -42,9 +52,7 @@ class VectorRepository:
         settings = get_settings()
         self.client = AsyncQdrantClient(
             url=settings.QDRANT_URL,
-            # Use gRPC if available for performance
-            grpc_port=6334,
-            prefer_grpc=True,
+            check_compatibility=False,
         )
 
     async def initialize_collection(self, dimension: int = 1024) -> None:
@@ -90,19 +98,7 @@ class VectorRepository:
         created_at: int,
         additional_payload: dict[str, Any] | None = None,
     ) -> None:
-        """
-        Upsert a single vector point.
-
-        Args:
-            point_id: UUID matching the PostgreSQL record ID.
-            vector: The dense embedding vector.
-            tenant_id: Must match the PostgreSQL tenant_id.
-            external_user_id: The external user this memory belongs to.
-            memory_type: 'episodic' or 'semantic'.
-            importance_score: For fast ranking.
-            created_at: Unix timestamp.
-            additional_payload: Any extra metadata.
-        """
+        """Upsert a single vector point."""
         payload = {
             "tenant_id": str(tenant_id),
             "external_user_id": external_user_id,
@@ -132,57 +128,46 @@ class VectorRepository:
         memory_type: str | None = None,
         limit: int = 10,
         score_threshold: float | None = None,
-    ) -> list[rest.ScoredPoint]:
+    ) -> list[ScoredPoint]:
         """
         Search for nearest neighbors with mandatory tenant/user filters.
-
-        Args:
-            query_vector: The embedded query.
-            tenant_id: Filter to enforce tenant isolation.
-            external_user_id: Filter to enforce user isolation.
-            memory_type: Optional filter by type.
-            limit: Max results.
-            score_threshold: Optional cosine similarity minimum threshold.
-
-        Returns:
-            List of ScoredPoint objects from Qdrant.
         """
-        # Build mandatory filter conditions
-        conditions = [
-            rest.FieldCondition(
-                key="tenant_id", match=rest.MatchValue(value=str(tenant_id))
-            ),
-            rest.FieldCondition(
-                key="external_user_id", match=rest.MatchValue(value=external_user_id)
-            ),
+        must_conditions: list[dict[str, Any]] = [
+            {"key": "tenant_id", "match": {"value": str(tenant_id)}},
+            {"key": "external_user_id", "match": {"value": external_user_id}},
         ]
-
         if memory_type:
-            conditions.append(
-                rest.FieldCondition(
-                    key="memory_type", match=rest.MatchValue(value=memory_type)
-                )
+            must_conditions.append({"key": "memory_type", "match": {"value": memory_type}})
+
+        body: dict[str, Any] = {
+            "vector": query_vector,
+            "filter": {"must": must_conditions},
+            "limit": limit,
+            "with_payload": True,
+            "with_vector": False,
+        }
+        if score_threshold is not None:
+            body["score_threshold"] = score_threshold
+
+        settings = get_settings()
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            res = await client.post(
+                f"{settings.QDRANT_URL.rstrip('/')}/collections/{COLLECTION_NAME}/points/search",
+                json=body,
             )
-
-        query_filter = rest.Filter(must=conditions)
-
-        # Execute search
-        results = await self.client.search(
-            collection_name=COLLECTION_NAME,
-            query_vector=query_vector,
-            query_filter=query_filter,
-            limit=limit,
-            score_threshold=score_threshold,
-            with_payload=True,
-            with_vectors=False,
-        )
-
-        return results
+            res.raise_for_status()
+            data = res.json().get("result", [])
+            return [
+                ScoredPoint(
+                    id=str(item.get("id")),
+                    score=float(item.get("score", 0.0)),
+                    payload=item.get("payload") or {},
+                )
+                for item in data
+            ]
 
     async def delete_point(self, point_id: uuid.UUID) -> None:
-        """
-        Delete a point by ID.
-        """
+        """Delete a point by ID."""
         await self.client.delete(
             collection_name=COLLECTION_NAME,
             points_selector=rest.PointIdsList(points=[str(point_id)]),

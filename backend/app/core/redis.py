@@ -23,13 +23,15 @@ Design decisions:
 from __future__ import annotations
 
 import json
-import uuid
-from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import redis.asyncio as aioredis
 
 from app.core.config import get_settings
+
+if TYPE_CHECKING:
+    import uuid
+    from collections.abc import AsyncGenerator
 
 
 class RedisKeyBuilder:
@@ -55,7 +57,7 @@ class RedisKeyBuilder:
     RATE_LIMIT_BURST_PREFIX = "ratelimit:burst"
 
     # TTLs in seconds
-    WM_TTL: int = 7200       # 2 hours
+    WM_TTL: int = 7200  # 2 hours
     SESSION_TTL: int = 1800  # 30 minutes
     RATE_LIMIT_TTL: int = 90
     RATE_LIMIT_BURST_TTL: int = 10
@@ -179,7 +181,7 @@ def create_redis_client() -> RedisClient:
     serialization and key operations.
     """
     settings = get_settings()
-    client = aioredis.from_url(
+    client = aioredis.from_url(  # type: ignore
         settings.REDIS_URL,
         max_connections=50,
         decode_responses=True,

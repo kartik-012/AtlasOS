@@ -6,11 +6,11 @@ Endpoints for managing tenants, memberships, and team invitations.
 
 from __future__ import annotations
 
-import uuid
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.dependencies import (
     TenantContext,
     get_current_user,
@@ -19,13 +19,28 @@ from app.core.dependencies import (
     get_tenant_context,
     require_role,
 )
-from app.models.user import User
 from app.schemas.auth import TokenResponse
-from app.schemas.invite import InviteAcceptRequest, InviteCreateRequest, InviteResponse, MemberRoleUpdateRequest
-from app.schemas.tenant import TenantCreateRequest, TenantMemberResponse, TenantResponse, TenantUpdateRequest
+from app.schemas.invite import (
+    InviteAcceptRequest,
+    InviteCreateRequest,
+    InviteResponse,
+    MemberRoleUpdateRequest,
+)
+from app.schemas.tenant import (
+    TenantCreateRequest,
+    TenantMemberResponse,
+    TenantResponse,
+    TenantUpdateRequest,
+)
 from app.services.auth import AuthService
 from app.services.tenant import TenantService
-from app.core.config import get_settings
+
+if TYPE_CHECKING:
+    import uuid
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from app.models.user import User
 
 router = APIRouter(prefix="/tenants", tags=["Tenants"])
 
@@ -42,12 +57,24 @@ async def create_tenant(
     session: AsyncSession = Depends(get_db_session_no_tenant),
 ) -> TenantResponse:
     tenant_service = TenantService(session)
-    tenant = await tenant_service.create_tenant(
+    return await tenant_service.create_tenant(  # type: ignore
         name=request.name,
         slug=request.slug,
         creator_user_id=current_user.id,
     )
-    return tenant
+
+
+@router.get(
+    "",
+    response_model=list[TenantResponse],
+    summary="List all accessible tenants for the user",
+)
+async def list_tenants(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session_no_tenant),
+) -> list[TenantResponse]:
+    tenant_service = TenantService(session)
+    return await tenant_service.get_tenants_for_user(current_user.id)  # type: ignore
 
 
 @router.get(
@@ -61,7 +88,7 @@ async def get_current_tenant(
     session: AsyncSession = Depends(get_db_session_with_tenant),
 ) -> TenantResponse:
     tenant_service = TenantService(session)
-    return await tenant_service.get_tenant(tenant_ctx.tenant_id)
+    return await tenant_service.get_tenant(tenant_ctx.tenant_id)  # type: ignore
 
 
 @router.patch(
@@ -76,7 +103,7 @@ async def update_current_tenant(
     session: AsyncSession = Depends(get_db_session_with_tenant),
 ) -> TenantResponse:
     tenant_service = TenantService(session)
-    return await tenant_service.update_tenant(
+    return await tenant_service.update_tenant(  # type: ignore
         tenant_id=tenant_ctx.tenant_id,
         update_data=request.model_dump(exclude_unset=True),
     )
@@ -109,6 +136,7 @@ async def switch_tenant(
 # Membership Management
 # =============================================================================
 
+
 @router.get(
     "/current/members",
     response_model=list[TenantMemberResponse],
@@ -127,7 +155,7 @@ async def list_members(
         offset=skip,
         limit=limit,
     )
-    
+
     # Map to schema explicitly since we need fields from the joined User model
     return [
         TenantMemberResponse(
@@ -161,10 +189,10 @@ async def update_member_role(
         new_role=request.role,
         requesting_user_id=tenant_ctx.user_id,
     )
-    
+
     # Refresh the relationship so user is loaded
     await session.refresh(m, ["user"])
-    
+
     return TenantMemberResponse(
         id=m.id,
         user_id=m.user_id,
@@ -198,6 +226,7 @@ async def remove_member(
 # Invitations
 # =============================================================================
 
+
 @router.post(
     "/current/invites",
     response_model=InviteResponse,
@@ -211,15 +240,16 @@ async def create_invite(
     session: AsyncSession = Depends(get_db_session_with_tenant),
 ) -> InviteResponse:
     tenant_service = TenantService(session)
-    invite, plaintext_token = await tenant_service.create_invite(
+    invite, _plaintext_token = await tenant_service.create_invite(
         tenant_id=tenant_ctx.tenant_id,
         email=request.email,
         role=request.role,
         invited_by=tenant_ctx.user_id,
     )
-    
+
     # In production, dispatch invite email via Celery (token is never logged).
     from app.core.logging import get_logger
+
     logger = get_logger(__name__)
     logger.info(
         "invite_created",
@@ -228,7 +258,7 @@ async def create_invite(
         email=request.email,
     )
 
-    return invite
+    return invite  # type: ignore
 
 
 @router.post(
@@ -246,9 +276,9 @@ async def accept_invite(
         token=request.token,
         user_id=current_user.id,
     )
-    
+
     await session.refresh(m, ["user"])
-    
+
     return TenantMemberResponse(
         id=m.id,
         user_id=m.user_id,

@@ -17,17 +17,21 @@ Design decisions:
 
 from __future__ import annotations
 
-import uuid
+from typing import TYPE_CHECKING
 from datetime import datetime
+import uuid
 
 from pydantic import EmailStr, Field, field_validator
 
 from app.schemas.common import AtlasBaseSchema
 
+if TYPE_CHECKING:
+    pass
 
 # =============================================================================
 # Registration
 # =============================================================================
+
 
 class UserRegisterRequest(AtlasBaseSchema):
     """Schema for new user registration via email/password."""
@@ -74,6 +78,7 @@ class UserRegisterRequest(AtlasBaseSchema):
 # =============================================================================
 # Login
 # =============================================================================
+
 
 class LoginRequest(AtlasBaseSchema):
     """Schema for email/password login."""
@@ -132,6 +137,7 @@ class TenantSwitchRequest(AtlasBaseSchema):
 # =============================================================================
 # API Keys
 # =============================================================================
+
 
 class ApiKeyCreateRequest(AtlasBaseSchema):
     """Schema for creating a new API key."""
@@ -214,6 +220,7 @@ class ApiKeyRevokeRequest(AtlasBaseSchema):
 # OAuth2
 # =============================================================================
 
+
 class OAuthLoginResponse(AtlasBaseSchema):
     """Response containing the OAuth2 authorization URL to redirect to."""
 
@@ -239,6 +246,7 @@ class OAuthCallbackRequest(AtlasBaseSchema):
 # =============================================================================
 # Password Management
 # =============================================================================
+
 
 class PasswordChangeRequest(AtlasBaseSchema):
     """Schema for changing the current user's password."""
