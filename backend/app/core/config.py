@@ -87,6 +87,8 @@ class Settings(BaseSettings):
     VOYAGEAI_API_KEY: str = ""
     JINA_API_KEY: str = ""
     CUSTOM_EMBEDDING_URL: str = ""
+    HF_API_TOKEN: str = ""   # HuggingFace Inference API token (production)
+    QDRANT_API_KEY: str = ""  # Qdrant Cloud API key (production)
 
     # --------------------------------------------------------------------------
     # NLI (Natural Language Inference) Service

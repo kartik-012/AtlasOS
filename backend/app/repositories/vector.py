@@ -52,6 +52,7 @@ class VectorRepository:
         settings = get_settings()
         self.client = AsyncQdrantClient(
             url=settings.QDRANT_URL,
+            api_key=settings.QDRANT_API_KEY if settings.QDRANT_API_KEY else None,
             check_compatibility=False,
         )
 
