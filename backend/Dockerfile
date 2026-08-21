@@ -75,8 +75,6 @@ RUN chown -R atlasos:atlasos /app
 # Switch to non-root user
 USER atlasos
 
-# Expose the FastAPI port
+# Railway injects $PORT dynamically — use shell form so the variable is expanded
 EXPOSE 8000
-
-# Default command: run the FastAPI application with uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
