@@ -72,9 +72,10 @@ COPY . .
 # Change ownership to non-root user
 RUN chown -R atlasos:atlasos /app
 
-# Switch to non-root user
-USER atlasos
+# Copy startup script and make it executable
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
 
-# Railway injects $PORT dynamically — use shell form so the variable is expanded
+# Railway injects $PORT dynamically — start.sh expands it via the shell
 EXPOSE 8000
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD ["/start.sh"]
