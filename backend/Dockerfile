@@ -69,13 +69,11 @@ WORKDIR /app
 # Copy application code
 COPY . .
 
-# Change ownership to non-root user
-RUN chown -R atlasos:atlasos /app
+# Switch to non-root user
+USER atlasos
 
-# Copy startup script and make it executable
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
-
-# Railway injects $PORT dynamically — start.sh expands it via the shell
+# Expose default port (Railway overrides via $PORT)
 EXPOSE 8000
-CMD ["/start.sh"]
+
+# Use Python to start uvicorn so $PORT env var is read at runtime without shell issues
+CMD ["python", "-c", "import os,uvicorn; uvicorn.run('app.main:app', host='0.0.0.0', port=int(os.environ.get('PORT', 8000)), log_level='info')"]
