@@ -50,6 +50,7 @@ router = APIRouter(prefix="/tenants", tags=["Tenants"])
     response_model=TenantResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new tenant workspace",
+    description="Provision a new tenant workspace and assign the authenticated user as admin.",
 )
 async def create_tenant(
     request: TenantCreateRequest,
