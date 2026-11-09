@@ -53,6 +53,7 @@ async def get_current_user_profile(
     "/me",
     response_model=UserWithTenantsResponse,
     summary="Update current user profile",
+    description="Update user display name, avatar, or profile preferences.",
 )
 async def update_current_user_profile(
     request: UserUpdateRequest,
