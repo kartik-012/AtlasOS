@@ -30,6 +30,11 @@ AtlasOS is designed for multi-tenancy.
 - **Vector Store Level**: Qdrant queries always filter on a `tenant_id` payload field.
 - **Application Level**: Tenant IDs are derived securely from the authenticated context (API key or Session), never from user-supplied parameters.
 
+### Security & Data Protection
+- **Authentication**: JWT-based bearer tokens for dashboard sessions; SHA-256 hashed API keys for agent and programmatic interactions.
+- **Tenant Context Propagation**: Tenant boundaries are verified on ingress and propagated through all database connections via session-local parameters.
+- **Audit Trails**: Non-repudiation guaranteed by DB-level write-only enforcement.
+
 ### Contradiction Detection
 When a new semantic memory is written, it is compared against existing memories using a Natural Language Inference (NLI) model (e.g., `roberta-large-mnli`). If a contradiction is detected, a `ContradictionLog` is created, and the system resolves it based on the tenant's configured policy (`most_recent_wins`, `confidence_weighted`, `manual_review`).
 
