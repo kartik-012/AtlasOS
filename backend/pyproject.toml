@@ -9,6 +9,7 @@ name = "atlasos-backend"
 version = "0.1.0"
 description = "AtlasOS — AI Memory Operating System Backend"
 requires-python = ">=3.11"
+license = { text = "MIT" }
 
 # ------------------------------------------------------------------------------
 # Ruff — Linter & Formatter
