@@ -105,6 +105,7 @@ def create_app() -> FastAPI:
 
     application = FastAPI(
         title="AtlasOS API",
+        summary="AI Memory Operating System API",
         description=(
             "AtlasOS — AI Memory Operating System. "
             "Provides hierarchical memory management (working, episodic, semantic) "
