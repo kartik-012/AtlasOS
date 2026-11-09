@@ -80,6 +80,7 @@ async def update_working_memory(
     "/{external_user_id}/{session_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Clear working memory state",
+    description="Delete active ephemeral session cache from Redis for the given user session.",
     dependencies=[Depends(require_role("admin", "member"))],
 )
 async def clear_working_memory(
