@@ -27,6 +27,7 @@ router = APIRouter(prefix="/contradictions", tags=["Contradictions"])
 @router.get(
     "/",
     response_model=ContradictionListResponse,
+    summary="List Contradictions",
     dependencies=[Depends(require_role("admin", "member", "read_only"))],
 )
 async def list_contradictions(
