@@ -60,6 +60,7 @@ async def register(
     request: UserRegisterRequest,
     session: AsyncSession = Depends(get_db_session_no_tenant),
 ) -> User:
+    """Register a new user and create their initial credentials."""
     auth_service = AuthService(session)
     return await auth_service.register_user(
         email=request.email,
