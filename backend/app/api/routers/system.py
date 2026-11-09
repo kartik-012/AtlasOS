@@ -29,6 +29,7 @@ router = APIRouter(prefix="/system", tags=["System"])
     "/stats",
     response_model=SystemStatsResponse,
     summary="Get System Statistics",
+    description="Return aggregated system counts across tenants, memories, contradictions, and services.",
     dependencies=[Depends(require_role("admin"))],
 )
 async def get_system_stats(
