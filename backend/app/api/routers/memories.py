@@ -128,6 +128,7 @@ async def write_semantic_memory(
     "/search",
     response_model=MemorySearchResponse,
     summary="Search episodic and semantic memories",
+    description="Perform hybrid vector and relational search over tenant memories with score threshold filtering.",
     # Anyone with read access can search
     dependencies=[Depends(require_role("admin", "member", "read_only"))],
 )
