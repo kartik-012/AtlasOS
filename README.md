@@ -112,6 +112,10 @@ docker-compose exec backend python scripts/init_qdrant.py
 
 ## 🧹 Common Operations & Maintenance
 
+*   **Run Test Suite**:
+    ```bash
+    docker-compose exec backend pytest
+    ```
 *   **View Service Logs**:
     ```bash
     docker-compose logs -f backend
