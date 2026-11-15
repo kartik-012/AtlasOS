@@ -76,6 +76,9 @@ def _create_sync_engine() -> Engine:
     Uses psycopg2 driver. Only used by migration tooling, never by
     the running application. Minimal pool configuration since migrations
     are single-threaded sequential operations.
+
+    Returns:
+        Engine: Synchronous SQLAlchemy engine configured for Alembic.
     """
     settings = get_settings()
     return create_engine(
