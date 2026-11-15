@@ -42,6 +42,7 @@ async def create_webhook(
 @router.get(
     "/",
     response_model=list[WebhookResponse],
+    summary="List Webhooks",
     dependencies=[Depends(require_role("admin", "member"))],
 )
 async def list_webhooks(
