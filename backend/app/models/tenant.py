@@ -43,6 +43,7 @@ class Tenant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     Every tenant-scoped resource (memories, keys, evaluations, etc.)
     references this table via a foreign key with ON DELETE CASCADE.
+    Configures isolation boundaries, resolution policies, and retention limits.
     """
 
     __tablename__ = "tenants"
