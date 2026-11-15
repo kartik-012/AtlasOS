@@ -26,6 +26,7 @@ router = APIRouter(prefix="/evaluations", tags=["Evaluations"])
 
 @router.post(
     "/trigger",
+    summary="Trigger Evaluation Run",
     response_model=EvaluationRunResponse,
     dependencies=[Depends(require_role("admin"))],
     status_code=status.HTTP_201_CREATED,
