@@ -15,7 +15,7 @@ router = APIRouter(prefix="/ws", tags=["WebSockets"])
 @router.websocket("/")
 async def websocket_endpoint(websocket: WebSocket, token: str | None = None) -> Any:
     """
-    WebSocket endpoint for real-time events.
+    WebSocket endpoint streaming real-time memory and system events via Redis pub/sub.
     """
     await websocket.accept()
     settings = get_settings()
