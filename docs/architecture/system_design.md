@@ -14,6 +14,7 @@ The system is composed of several independent services communicating over a shar
   - DB 0: Application Cache & Rate Limiting.
   - DB 1: Celery Message Broker.
   - DB 2: Celery Result Backend.
+  - Pub/Sub: Real-time event broadcasting to connected WebSocket clients.
 - **Qdrant (Port 6333, 6334)**: Vector database storing high-dimensional embeddings for semantic search.
 - **Next.js Frontend (Port 3000)**: Developer Console for managing tenants, API keys, and exploring memories.
 
