@@ -66,7 +66,7 @@ async def extract_triples(
 )
 async def get_subgraph(
     external_user_id: str,
-    entities: list[str] = Query(default=[]),
+    entities: list[str] = Query(default=[], description="Filter subgraph by seed entity names."),
     tenant_ctx: TenantContext = Depends(get_tenant_context),
     session: AsyncSession = Depends(get_db_session_with_tenant),
 ) -> dict[str, Any]:
