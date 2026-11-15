@@ -46,6 +46,9 @@ def register_exception_handlers(app: FastAPI) -> None:
     Catches all AtlasOSError subclasses and formats them as consistent
     JSON error responses. Catches unhandled exceptions and returns a
     generic 500 error.
+
+    Args:
+        app: The FastAPI application instance to register handlers on.
     """
 
     @app.exception_handler(AtlasOSError)
