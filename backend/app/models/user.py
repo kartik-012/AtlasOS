@@ -39,6 +39,7 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     Global entity — not scoped to any single tenant.
     Users join tenants via the tenant_memberships table.
+    Supports email/password authentication and linked OAuth2 SSO providers.
     """
 
     __tablename__ = "users"
