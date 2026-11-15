@@ -68,6 +68,7 @@ class EpisodicMemory(UUIDPrimaryKeyMixin, TenantScopedMixin, TimestampMixin, Bas
     The importance_score (0.0-1.0) is initially set by the write pipeline
     and periodically recalibrated by background workers based on access
     frequency and recency.
+    Vector embeddings are referenced via the vector_id mapped to Qdrant.
     """
 
     __tablename__ = "episodic_memories"
