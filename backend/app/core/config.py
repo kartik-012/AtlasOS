@@ -65,6 +65,11 @@ class Settings(BaseSettings):
         """Construct the Qdrant REST URL from host and port."""
         return f"http://{self.QDRANT_HOST}:{self.QDRANT_PORT}"
 
+    @property
+    def QDRANT_GRPC_URL(self) -> str:
+        """Construct the Qdrant gRPC endpoint address from host and port."""
+        return f"{self.QDRANT_HOST}:{self.QDRANT_GRPC_PORT}"
+
     # --------------------------------------------------------------------------
     # Security & Authentication
     # --------------------------------------------------------------------------
