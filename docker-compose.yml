@@ -46,6 +46,7 @@ services:
   # DB 1: Celery broker
   # DB 2: Celery results
   # DB 3: Reserved for testing
+  # Pub/Sub: Real-time event broadcasting for WebSocket subscribers
   # ----------------------------------------------------------------------------
   redis:
     image: redis:7-alpine
