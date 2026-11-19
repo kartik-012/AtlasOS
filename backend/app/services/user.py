@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 
 
 class UserService:
-    """Service for user profile operations."""
+    """Service for user profile operations and tenant membership lookups."""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
