@@ -42,7 +42,7 @@ logger = get_logger(__name__)
 
 class TenantService:
     """
-    Service for tenant lifecycle and membership management.
+    Service for tenant workspace lifecycle, invitations, and membership management.
     """
 
     def __init__(self, session: AsyncSession) -> None:
