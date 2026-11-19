@@ -52,9 +52,8 @@ class AuditLog(UUIDPrimaryKeyMixin, Base):
       - TimestampMixin (no updated_at, since rows are never updated)
       - TenantScopedMixin (uses a custom FK with ON DELETE RESTRICT)
 
-    Immutability is enforced at the database level, not the application
-    level, as defense-in-depth against application bugs or compromised
-    application code.
+    Immutability is enforced at the database level via write-only triggers,
+    as defense-in-depth against application bugs or compromised application code.
     """
 
     __tablename__ = "audit_log"
