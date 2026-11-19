@@ -120,7 +120,7 @@ class AuthService:
         password: str,
     ) -> tuple[User, str, str]:
         """
-        Authenticate a user with email and password.
+        Authenticate a user with email and password credentials.
 
         Returns the user and a JWT token pair (access + refresh).
 
