@@ -39,9 +39,9 @@ class HTTPNLIProvider(NLIProvider):
         hypothesis: str,
     ) -> tuple[bool, float]:
         """
-        Evaluate if hypothesis contradicts premise via HTTP service.
+        Evaluate if hypothesis contradicts premise via HTTP inference service.
 
-        Returns True if the contradiction probability exceeds the threshold.
+        Returns True if the contradiction probability exceeds configured threshold.
         """
         async with httpx.AsyncClient(timeout=10.0) as client:
             try:
