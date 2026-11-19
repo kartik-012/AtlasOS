@@ -43,7 +43,7 @@ class Notification(UUIDPrimaryKeyMixin, TenantScopedMixin, Base):
 
     Read/unread state is tracked via is_read and read_at. Notifications
     are never updated beyond marking them as read — the original content
-    is immutable.
+    is immutable. New notifications are broadcast to active WebSocket clients.
 
     No TimestampMixin: Notifications don't have updated_at since they
     are only marked as read (tracked separately via read_at).
