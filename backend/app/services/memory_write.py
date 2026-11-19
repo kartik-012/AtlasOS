@@ -37,7 +37,7 @@ logger = get_logger(__name__)
 
 class MemoryWriteService:
     """
-    Service for writing memories and enriching knowledge graphs.
+    Service for writing episodic/semantic memories and enriching knowledge graphs.
     """
 
     def __init__(
