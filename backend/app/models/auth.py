@@ -51,7 +51,7 @@ class TenantMembership(UUIDPrimaryKeyMixin, TenantScopedMixin, TimestampMixin, B
     memberships. The role column implements basic RBAC:
       - admin: Full access including team and settings management.
       - member: Standard access to memory and evaluation features.
-      - read_only: View-only access for auditors and stakeholders.
+      - read_only: View-only access for auditors and stakeholders (no write operations permitted).
     """
 
     __tablename__ = "tenant_memberships"
