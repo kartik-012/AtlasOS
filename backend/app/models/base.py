@@ -119,7 +119,7 @@ class TenantScopedMixin:
     Adds a tenant_id foreign key column referencing tenants.id with
     ON DELETE CASCADE. This column is used by PostgreSQL Row-Level
     Security (RLS) policies to enforce tenant isolation at the
-    database level.
+    database level, ensuring cross-tenant data leakage is prevented.
 
     Every query on a tenant-scoped table is automatically filtered
     by the RLS policy checking:
