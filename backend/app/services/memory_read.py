@@ -33,7 +33,7 @@ logger = get_logger(__name__)
 
 class MemoryReadService:
     """
-    Service for executing advanced multi-modal memory retrieval queries.
+    Service for executing multi-stage memory retrieval and ranking queries.
     """
 
     def __init__(
