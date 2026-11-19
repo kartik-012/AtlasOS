@@ -43,7 +43,7 @@ class Webhook(UUIDPrimaryKeyMixin, TenantScopedMixin, TimestampMixin, Base):
     Outbound webhook endpoint configuration.
 
     Each webhook subscribes to specific event types and delivers
-    JSON payloads to the configured URL when those events occur.
+    JSON payloads to the configured URL with HMAC-SHA256 signature verification.
     """
 
     __tablename__ = "webhooks"
