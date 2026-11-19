@@ -52,7 +52,7 @@ class HTTPEmbeddingProvider(EmbeddingProvider):
         return self._dimension
 
     async def get_embedding(self, text: str) -> list[float]:
-        """Generate a single embedding."""
+        """Generate a single 1024-dimensional embedding vector for the input text."""
         results = await self.get_embeddings([text])
         if not results:
             raise ExternalServiceError(message="Embedding service returned empty result.")
