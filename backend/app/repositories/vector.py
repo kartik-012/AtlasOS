@@ -45,7 +45,7 @@ class VectorRepository:
     Repository for interacting with the Qdrant vector database.
 
     Provides methods for upserting points, searching by similarity with
-    mandatory payload filters, and deleting points.
+    mandatory tenant-scoped payload filters, and deleting points.
     """
 
     def __init__(self) -> None:
