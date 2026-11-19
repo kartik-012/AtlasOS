@@ -46,7 +46,7 @@ class EvaluationRun(UUIDPrimaryKeyMixin, TenantScopedMixin, Base):
     Evaluation runs can be triggered by:
       - Manual: Developer clicks "Run Evaluation" in the console.
       - Scheduled: Celery beat triggers periodic evaluations.
-      - CI: Triggered via API from a CI/CD pipeline.
+      - CI: Triggered via API from an external CI/CD automated pipeline.
 
     Status lifecycle: pending → running → completed | failed
     No updated_at — status tracked via started_at, completed_at, status.
